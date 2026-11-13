@@ -52,10 +52,10 @@ static void siano_pack_header(u8 *message, u16 type, u8 source,
 static int siano_send(struct siano_device *device, const u8 *message,
 		      size_t length, unsigned long deadline)
 {
-	u8 *buffer;
 	int timeout;
 	int ret;
 	unsigned long remaining;
+	u8 *bounce;
 
 	if (!atomic_read(&device->available))
 		return -ENODEV;
@@ -69,6 +69,15 @@ static int siano_send(struct siano_device *device, const u8 *message,
 			max_t(unsigned long, 1, jiffies_to_msecs(remaining)),
 			SIANO_COMMAND_TIMEOUT_MS);
 
+	/*
+	 * 呼び出し元はスタック上の配列でメッセージを組むことがある。bulk 転送のバッファは DMA の対象で、
+	 * スタックの領域を渡すと usb_hcd_map_urb_for_dma が -EAGAIN で拒否する (VMAP_STACK のカーネル)。
+	 * ヒープへ複写してから送る。
+	 */
+	bounce = kmemdup(message, length, GFP_KERNEL);
+	if (!bounce)
+		return -ENOMEM;
+
 	mutex_lock(&device->control_lock);
 	if (!atomic_read(&device->available)) {
 		ret = -ENODEV;
@@ -78,19 +87,11 @@ static int siano_send(struct siano_device *device, const u8 *message,
 		ret = -EIO;
 		goto exit;
 	}
-	/* 呼び出し元の message はスタック上の配列で、VMAP_STACK のカーネルでは DMA に使えない。
-	 * 8 バイトまでの短い OUT 転送は xHCI がイミディエイトデータで送るため通るが、ファームウェア転送の
-	 * 252 バイトは usb_submit_urb が -EAGAIN で失敗する (PX-S1UD V2.0 で確認)。ヒープ上の緩衝へ写して渡す。 */
-	buffer = kmemdup(message, length, GFP_KERNEL);
-	if (!buffer) {
-		ret = -ENOMEM;
-		goto exit;
-	}
 	device->bus.usb.ctrl_timeout = timeout;
-	ret = itedtv_bus_ctrl_tx(&device->bus, buffer, (int)length);
-	kfree(buffer);
+	ret = itedtv_bus_ctrl_tx(&device->bus, bounce, (int)length);
 exit:
 	mutex_unlock(&device->control_lock);
+	kfree(bounce);
 	return ret;
 }
 
