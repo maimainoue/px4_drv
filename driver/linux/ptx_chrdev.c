@@ -1198,13 +1198,20 @@ int ptx_chrdev_context_add_group(struct ptx_chrdev_context *chrdev_ctx,
 	if (ret)
 		goto fail_chrdev;
 
-	cdev_init(&group->cdev, &ptx_chrdev_fops);
-	group->cdev.owner = THIS_MODULE;
+	group->cdev = cdev_alloc();
+	if (!group->cdev) {
+		ret = -ENOMEM;
+		goto fail_chrdev;
+	}
+	group->cdev->ops = &ptx_chrdev_fops;
+	group->cdev->owner = THIS_MODULE;
 
-	ret = cdev_add(&group->cdev,
+	ret = cdev_add(group->cdev,
 		       MKDEV(MAJOR(chrdev_ctx->dev_base), group->minor_base),
 		       num);
 	if (ret < 0) {
+		kobject_put(&group->cdev->kobj);
+		group->cdev = NULL;
 		dev_err(dev,
 			"ptx_chrdev_context_add: cdev_add() failed. (ret: %d)\n",
 			ret);
@@ -1363,7 +1370,7 @@ void ptx_chrdev_group_destroy(struct ptx_chrdev_group *chrdev_group)
 				     chrdev_group->minor_base + i));
 	}
 
-	cdev_del(&chrdev_group->cdev);
+	cdev_del(chrdev_group->cdev);
 
 	mutex_unlock(&chrdev_group->lock);
 	kref_put(&chrdev_group->kref, ptx_chrdev_group_release);

@@ -54,3 +54,4 @@
 | [20261014_linux_card_reader_validation.md](20261014_linux_card_reader_validation.md) | Linux 版の内蔵カードリーダーの実機確認 |
 | [20261018_isdbc_validation.md](20261018_isdbc_validation.md) | PX-MLT 系の ISDB-C 対応の取り込みと実機確認 |
 | [20261018_official_windows_driver_analysis.md](20261018_official_windows_driver_analysis.md) | PX-Q3U4 の公式 Windows ドライバーの静的解析 |
+| [20261113_common_fixes.md](20261113_common_fixes.md) | `ptx_chrdev` の cdev の寿命 (KASAN の use-after-free) と、torne の制御転送のバッファの修正 |

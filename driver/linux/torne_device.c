@@ -37,6 +37,7 @@ static int torne_control_timeout(void *priv, u8 request_type, u16 value,
 	unsigned long deadline;
 	unsigned long remaining;
 	unsigned int pipe;
+	u8 *bounce = NULL;
 	int ret;
 
 	if (!device || !device->usb_dev || !atomic_read(&device->available))
@@ -68,8 +69,28 @@ static int torne_control_timeout(void *priv, u8 request_type, u16 value,
 	timeout_ms = max_t(unsigned int, 1, jiffies_to_msecs(remaining));
 	pipe = (request_type & USB_DIR_IN) ? usb_rcvctrlpipe(device->usb_dev, 0) :
 		usb_sndctrlpipe(device->usb_dev, 0);
+	if (length) {
+		/*
+		 * 共有コアと card_read32/write32 はスタック上の配列を渡す。
+		 * usb_control_msg の転送バッファは DMA 対象のため、スタックのまま
+		 * 渡すと usb_hcd_map_urb_for_dma が -EAGAIN で拒否する。
+		 * 長さは 64 バイト以下に制限済みなので、ヒープの一時領域を経由する。
+		 */
+		bounce = kmalloc(length, GFP_KERNEL);
+		if (!bounce) {
+			mutex_unlock(&device->control_lock);
+			return -ENOMEM;
+		}
+		if (!(request_type & USB_DIR_IN))
+			memcpy(bounce, buffer, length);
+	}
 	ret = usb_control_msg(device->usb_dev, pipe, 0xbc, request_type,
-			      value, index, buffer, length, timeout_ms);
+			      value, index, bounce, length, timeout_ms);
+	if (bounce) {
+		if ((request_type & USB_DIR_IN) && ret > 0)
+			memcpy(buffer, bounce, min_t(int, ret, length));
+		kfree(bounce);
+	}
 	mutex_unlock(&device->control_lock);
 	return ret;
 }
