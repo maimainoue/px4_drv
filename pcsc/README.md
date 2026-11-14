@@ -231,6 +231,7 @@ ATR の解析、通信速度の選択、T=1 の状態機械は Windows 版と共
 
 APDU 全体の絶対期限は `smart_card.cpp` が操作の合間に検査し、残り時間を `CardDevice` へ渡します。torne の IFD は `PX4_CARD_SET_TIMEOUT` ioctl で残り時間をカーネルへ伝え、各 UART レジスター転送は同じ期限の残りを使います。1回の USB 制御転送は最大 1000ms で打ち切られます。
 
+挿抜の監視 (`IFDHICCPresence`) は `SmartCard` を通らず、`PX4_CARD_DETECT` を直接呼ぶため、検出の前に毎回 1000 ms の期限を渡します。torne 系のカード層は、期限がポートの初期化から 1 秒後を過ぎると、新しく渡さない限り、すべての I/O を `ETIMEDOUT` で失敗させるためです。渡さないと、`pcscd` は起動の約 1 秒後から、状態を取得できなくなります (torne は、登録の時点で失敗します)。
 既存 IT930x 機器には `PX4_CARD_SET_TIMEOUT` を持たない古い kernel module があります。IFD はこの任意 ioctl が `ENOTTY` を返した場合にだけ既定値を使い、既存機器の転送経路を維持します。T=1 の待機ループは USB / UART ロックを保持しないユーザー空間に置いています。
 
 ## USB 切断とデバイスの寿命

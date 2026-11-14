@@ -33,10 +33,16 @@ struct Device {
 	bool present = true;
 	bool powered = false;
 	bool old_module = false;
+	/* torne 系のカード層のように、直前の PX4_CARD_SET_TIMEOUT がないと PX4_CARD_DETECT を ETIMEDOUT で失敗させる */
+	bool require_deadline = false;
+	bool deadline_armed = false;
+	unsigned int deadline_sets = 0;
 	int error = 0;
 	int detect_error = ETIMEDOUT;
 	unsigned int detect_failures = 0;
 	unsigned int detects = 0;
+	/* 種類を問わない ioctl の呼び出し回数 (切断のときに検出し直さないことの確認に使う) */
+	unsigned int ioctls = 0;
 	int power_error = ETIMEDOUT;
 	unsigned int power_failures = 0;
 	/* 制御転送のタイムアウトのように、失敗を返すまでにかかる時間 */
@@ -165,6 +171,7 @@ extern "C" int __wrap_ioctl(int fd, unsigned long command, ...)
 #ifdef PX4_IFD_FAKE_MODULE
 	ApplyControl(*device);
 #endif
+	device->ioctls++;
 	if (command == PX4_CARD_DETECT)
 		device->detects++;
 	if (!device->opened || !device->available)
@@ -175,6 +182,12 @@ extern "C" int __wrap_ioctl(int fd, unsigned long command, ...)
 	auto &value = *static_cast<__u32 *>(argument);
 	auto &frame = *static_cast<px4_card_frame *>(argument);
 	switch (command) {
+	case PX4_CARD_SET_TIMEOUT:
+		/* カーネルモジュールは、電源の状態に依らず、次の I/O の期限を受け付ける */
+		assert(value != 0 && value <= 10000);
+		device->deadline_armed = true;
+		device->deadline_sets++;
+		return 0;
 	case PX4_CARD_POWER_ON:
 		if (device->power_failures) {
 			device->power_failures--;
@@ -187,6 +200,12 @@ extern "C" int __wrap_ioctl(int fd, unsigned long command, ...)
 		device->powered = false;
 		return 0;
 	case PX4_CARD_DETECT:
+		if (device->require_deadline) {
+			/* 期限は 1 回の I/O で使い切る */
+			if (!device->deadline_armed)
+				return Failure(ETIMEDOUT);
+			device->deadline_armed = false;
+		}
 		if (device->detect_failures) {
 			device->detect_failures--;
 			return Failure(device->detect_error);
@@ -316,6 +335,16 @@ int main(int argc, char *argv[])
 	assert(IFDHICCPresence(0) == IFD_ICC_NOT_PRESENT);
 	assert(devices[0].powered && devices[0].resets == 0);
 	assert(IFDHCloseChannel(0) == IFD_SUCCESS && !devices[0].powered);
+	/* 期限を渡さないと検出が失敗するカード層 (torne 系) でも、挿抜の監視ごとに期限を渡すため、常に検出できる */
+	devices[0] = Device{};
+	devices[0].require_deadline = true;
+	assert(IFDHCreateChannelByName(0, path0) == IFD_SUCCESS);
+	for (unsigned int i = 0; i < 5; i++)
+		assert(IFDHICCPresence(0) == IFD_ICC_PRESENT);
+	assert(devices[0].detects == 5 && devices[0].deadline_sets >= 5 && last_log.empty());
+	devices[0].present = false;
+	assert(IFDHICCPresence(0) == IFD_ICC_NOT_PRESENT); // 抜去も、期限を渡したうえで検出できる
+	assert(IFDHCloseChannel(0) == IFD_SUCCESS);
 	devices[0] = Device{};
 	devices[0].power_failures = 1;
 	assert(IFDHCreateChannelByName(0, path0) == IFD_SUCCESS); // 電源投入の一時的な失敗は再試行して登録する
@@ -427,9 +456,9 @@ int main(int argc, char *argv[])
 	length = sizeof(buffer);
 	assert(IFDHGetCapabilities(0, TAG_IFD_ATR, &length, buffer) == IFD_SUCCESS && length == 0);
 	devices[0].available = false;
-	const auto detects = devices[0].detects;
+	const auto ioctls = devices[0].ioctls;
 	assert(IFDHICCPresence(0) == IFD_NO_SUCH_DEVICE);
-	assert(devices[0].detects == detects + 1); // USB の切断は検出し直さずにすぐ伝える
+	assert(devices[0].ioctls == ioctls + 1); // USB の切断は、期限の設定の時点で知り、検出し直さずにすぐ伝える
 	assert(IFDHICCPresence(0x10000) == IFD_ICC_PRESENT);
 	assert(IFDHCloseChannel(0) == IFD_SUCCESS && !devices[0].opened);
 	assert(IFDHCloseChannel(0) == IFD_NO_SUCH_DEVICE);

@@ -79,9 +79,23 @@ RESPONSECODE WithReader(DWORD lun, Function function)
 	}
 }
 
+/* 挿抜の監視 1 回の期限。1 回の USB 制御転送の上限 (1000 ms) に合わせる */
+constexpr std::uint32_t PRESENCE_TIMEOUT_MS = 1000;
+
 int CheckPresence(Reader &reader, bool &present)
 {
-	int ret = reader.device->DetectCard(present);
+	present = false;
+	/*
+	 * torne 系 (torne、PIX-DT295、GV-MVP/XZ) のカード層は、直前に PX4_CARD_SET_TIMEOUT で渡された絶対期限までに
+	 * I/O を終える。期限はポートの初期化の 1 秒後が初期値で、新しく渡さないと、その後の検出はすべて即座に ETIMEDOUT になる。
+	 * SmartCard を通る操作は期限を渡すが、挿抜の監視はここから直接検出するため、毎回期限を渡す。
+	 * 期限を持たない古いカーネルモジュールは ENOTTY を返し、既定の転送期限で動く。
+	 */
+	int ret = reader.device->SetCardIoTimeout(PRESENCE_TIMEOUT_MS);
+	if (ret == -ENOTTY)
+		ret = 0;
+	if (!ret)
+		ret = reader.device->DetectCard(present);
 	/* 通信の失敗と同じく、一時的な USB の失敗ではカードを閉じず、カードの抜去と USB の切断のときだけ閉じる */
 	if (ret ? MapError(ret) == IFD_NO_SUCH_DEVICE : !present)
 		reader.Invalidate();
