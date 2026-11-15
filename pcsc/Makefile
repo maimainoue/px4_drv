@@ -28,7 +28,7 @@ macos-bundle: $(MACOS_BINARY) $(MACOS_INFO)
 $(MACOS_BINARY): $(MACOS_SOURCES) $(MACOS_HEADERS) exports.macos | $(BUILD)
 	mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) -bundle -Wl,-undefined,dynamic_lookup \
-		-Wl,-exported_symbols_list,exports.macos $(MACOS_SOURCES) -o $@
+		-Wl,-exported_symbols_list,exports.macos -framework IOKit -framework CoreFoundation $(MACOS_SOURCES) -o $@
 
 $(MACOS_INFO): Info-macos.plist | $(BUILD)
 	mkdir -p $(dir $@)
