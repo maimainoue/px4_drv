@@ -88,11 +88,15 @@ IFD ハンドラーは USB 切断以外の失敗ではその場で1回だけ検�
 
 ## macOS の IFD ハンドラー
 
-macOS 用 bundle は `ifdhandler_macos.cpp` と `Info-macos.plist` で構成し、Sony CECH-ZD1 J を登録します。IFD ハンドラーは USB を直接開かず、`PX4_RUNTIME_DIR` の `px4_card_pipe.sock` 経由で DriverHost_PX4 の CardServer へ PC/SC の `STATUS`、`RESET`、`TRANSMIT` を渡します。DriverHost_PX4 が USB ブリッジの唯一の所有者となり、チューナー受信とカード通信を同じ機器状態で直列化します。
+macOS 用 bundle は `ifdhandler_macos.cpp` と `Info-macos.plist` で構成し、Sony CECH-ZD1 J、GV-MVP/XZ、PIX-DT295 (Rev.01 と Rev.02) を登録します。IFD ハンドラーは USB を直接開かず、`PX4_RUNTIME_DIR` の `px4_card_pipe.sock` 経由で DriverHost_PX4 の CardServer へ PC/SC の `STATUS`、`RESET`、`TRANSMIT` を渡します。DriverHost_PX4 が USB ブリッジの唯一の所有者となり、チューナー受信とカード通信を同じ機器状態で直列化します。
 
-PC/SC の USB `DeviceName` からバス番号とデバイス番号を読み取れる場合は、DriverHost_PX4 が使う同じ `BUS:ADDRESS` から reader ID を照合します。同一機種が複数台あり、一意に照合できないときは誤ったカードへ接続せず IFD の登録を失敗させます。DeviceName が1台の Torne しか特定しない場合は、その候補を選びます。
+PC/SC の USB `DeviceName` からバス番号とデバイス番号を読み取れる場合は、DriverHost_PX4 が使う同じ `BUS:ADDRESS` から reader ID を照合します。同一機種が複数台あり、一意に照合できないときは誤ったカードへ接続せず IFD の登録を失敗させます。DeviceName からバス番号とデバイス番号を読み取れないか照合できず、DriverHost_PX4 が公開する内蔵カードリーダーが1台だけの場合は、その候補を選びます。
 
-macOS では Xcode Command Line Tools がある環境で `make -C pcsc macos-bundle` を実行すると `ifd-px4.bundle` を作れます。導入は `sudo make -C pcsc install` で行えます。配置先を変える場合は `MACOS_IFD_DIR` を指定します。DriverHost_PX4 を起動してから PC/SC アプリケーションを開き、DriverHost と PC/SC プロセスで `PX4_RUNTIME_DIR` を変える場合は同じディレクトリを指定してください。Mac 用の IFD API 宣言は [`vendor/ifdhandler.h`](vendor/ifdhandler.h) に含み、BSD 3-Clause の出典とハッシュを同じ `vendor/README.md` に記録しています。
+macOS では Xcode Command Line Tools がある環境で `make -C pcsc macos-bundle` を実行すると `ifd-px4.bundle` を作れます。導入は `sudo make -C pcsc install` で行えます。`install` は bundle に ad-hoc 署名を付けて、`/usr/local/libexec/SmartCardServices/drivers` へ丸ごとコピーします。Apple の IFD ホストは署名のない dylib を読み込まず、SIP が有効な macOS では `/usr/libexec` 配下へ書き込めないためです。導入後は `sudo killall -9 com.apple.ifdreader` で IFD ホストを終了させ (launchd が必要時に再起動します)、カードリーダーを抜き差しすると、`system_profiler SPSmartCardsDataType` に表示されます。配置先を変える場合は `MACOS_IFD_DIR` を指定します。DriverHost_PX4 を起動してから PC/SC アプリケーションを開き、DriverHost と PC/SC プロセスで `PX4_RUNTIME_DIR` を変える場合は同じディレクトリを指定してください。Apple の IFD ホスト (`com.apple.ifdbundle`) は、`IFDHCreateChannelByName` の `DeviceName` に USB のパスではなく `ifdFriendlyName` を渡し、`IFDHPowerICC` の `*AtrLength` を 0 にして呼びます。IFD は機種名でリーダーを選び、同じ機種が複数台あって一意に決まらないときは接続を失敗させます。DriverHost_PX4 の機器の初期化が終わる前の問い合わせには、最大 15 秒待ちます。
+
+macOS 11.7.10 (x86_64) で、Sony CECH-ZD1 J、GV-MVP/XZ、PIX-DT295 Rev.01、PIX-DT295 Rev.02 の 4 台を同時に接続し、`system_profiler SPSmartCardsDataType` で 4 台とも ATR 付きで認識されること、`SCardConnect` (T=1) と B-CAS 初期化 APDU `90 30 00 00 00` が 4 台とも SW=9000 で 3 回連続して成功することを確認しました。受信との同時利用、長時間の動作、同じ機種を複数台つないだときの対応付けは未確認です。
+
+Mac 用の IFD API 宣言は [`vendor/ifdhandler.h`](vendor/ifdhandler.h) に含み、BSD 3-Clause の出典とハッシュを同じ `vendor/README.md` に記録しています。
 
 pcscd は USB の接続を検出すると、[`Info.plist`](Info.plist) の VID と PID が一致する機器についてこの IFD ハンドラーを読み込みます。  
 IFD ハンドラーは、渡された USB のバス番号とデバイス番号を sysfs の `/sys/class/px4card/<ID>` の親と照合し、その `uevent` の `DEVNAME` から開くデバイスファイルを決めます。  

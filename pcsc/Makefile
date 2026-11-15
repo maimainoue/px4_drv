@@ -11,7 +11,9 @@ MACOS_PCSC_HEADERS ?= $(MACOS_SDK)/System/Library/Frameworks/PCSC.framework/Vers
 MACOS_BUNDLE := $(BUILD)/ifd-px4.bundle/Contents
 MACOS_BINARY := $(MACOS_BUNDLE)/MacOS/libifd-px4.dylib
 MACOS_INFO := $(MACOS_BUNDLE)/Info.plist
-MACOS_IFD_DIR ?= /usr/libexec/SmartCardServices/drivers
+# SIP が有効な macOS では /usr/libexec 配下へ書き込めないため、/usr/local 配下を既定にする。
+MACOS_IFD_DIR ?= /usr/local/libexec/SmartCardServices/drivers
+MACOS_BUNDLE_DIR := $(BUILD)/ifd-px4.bundle
 MACOS_SOURCES := ifdhandler_macos.cpp
 MACOS_HEADERS := $(ROOT)/host/common/card_command.hpp vendor/ifdhandler.h
 
@@ -32,15 +34,21 @@ $(MACOS_INFO): Info-macos.plist | $(BUILD)
 	mkdir -p $(dir $@)
 	cp $< $@
 
+# Apple の IFD ホストは、署名のない dylib を読み込まない。ad-hoc 署名は bundle 全体に付けるため、
+# 導入では個別のファイルではなく bundle を丸ごとコピーする (署名が _CodeSignature に入る)。
+macos-sign: $(MACOS_BINARY) $(MACOS_INFO)
+	codesign --force --deep -s - $(MACOS_BUNDLE_DIR)
+	codesign --verify --deep --strict $(MACOS_BUNDLE_DIR)
+
 $(BUILD):
 	mkdir -p $@
 
-install: macos-bundle
-	mkdir -p "$(DESTDIR)$(MACOS_IFD_DIR)/ifd-px4.bundle/Contents/MacOS"
-	install -m 0755 $(MACOS_BINARY) "$(DESTDIR)$(MACOS_IFD_DIR)/ifd-px4.bundle/Contents/MacOS/libifd-px4.dylib"
-	install -m 0644 $(MACOS_INFO) "$(DESTDIR)$(MACOS_IFD_DIR)/ifd-px4.bundle/Contents/Info.plist"
+install: macos-sign
+	mkdir -p "$(DESTDIR)$(MACOS_IFD_DIR)"
+	rm -rf "$(DESTDIR)$(MACOS_IFD_DIR)/ifd-px4.bundle"
+	cp -R $(MACOS_BUNDLE_DIR) "$(DESTDIR)$(MACOS_IFD_DIR)/ifd-px4.bundle"
 
-.PHONY: all install macos-bundle
+.PHONY: all install macos-bundle macos-sign
 
 else
 
