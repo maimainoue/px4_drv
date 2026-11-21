@@ -109,7 +109,11 @@ struct ptx_chrdev_group {
 	atomic_t available;
 	struct ptx_chrdev_context *parent;
 	struct device *dev;
-	struct cdev cdev;
+	/*
+	 * cdev_alloc() で確保する。開いているファイルは close の後 (release の後) に cdev_put() で cdev の kobject を
+	 * 参照するので、group を解放する release の中で一緒に解放してはならない。
+	 */
+	struct cdev *cdev;
 	struct kref *owner_kref;
 	void (*owner_kref_release)(struct kref *);
 	unsigned int minor_base;
