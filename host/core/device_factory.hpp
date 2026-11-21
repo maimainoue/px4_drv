@@ -25,6 +25,7 @@ enum class DeviceType : std::uint32_t {
 	T230C,
 	SIANO,
 	TORNE,
+	DT295,
 };
 
 /* INI の Type 文字列から機種系統を引く。未知の値は UNKNOWN。 */

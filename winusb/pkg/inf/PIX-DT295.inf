@@ -1,0 +1,53 @@
+; PIXELA PIX-DT295 Rev.01 (06B8:103B) / Rev.02 (06B8:105C)
+[Version]
+Signature="$Windows NT$"
+Class=Media
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%AuthorName%
+DriverVer=11/14/2026,26.11.14.00
+CatalogFile=px4_drv_winusb.cat
+
+[Manufacturer]
+%AuthorName%=DT295_WinUSB,ntx86,ntamd64,ntarm64
+
+[DT295_WinUSB.ntx86]
+%DT295_R01.DeviceDesc%=DT295_R01.DeviceInstall,USB\VID_06B8&PID_103B
+%DT295_R02.DeviceDesc%=DT295_R02.DeviceInstall,USB\VID_06B8&PID_105C
+[DT295_WinUSB.ntamd64]
+%DT295_R01.DeviceDesc%=DT295_R01.DeviceInstall,USB\VID_06B8&PID_103B
+%DT295_R02.DeviceDesc%=DT295_R02.DeviceInstall,USB\VID_06B8&PID_105C
+[DT295_WinUSB.ntarm64]
+%DT295_R01.DeviceDesc%=DT295_R01.DeviceInstall,USB\VID_06B8&PID_103B
+%DT295_R02.DeviceDesc%=DT295_R02.DeviceInstall,USB\VID_06B8&PID_105C
+
+[DT295_R01.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=DT295.DeviceSetup.AddProperty
+[DT295_R01.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[DT295_R01.DeviceInstall.HW]
+AddReg=DT295_R01.DeviceSetup.AddReg
+[DT295_R01.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{BA834A78-739B-40E7-A1BC-B63920975BDF}"
+
+[DT295_R02.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=DT295.DeviceSetup.AddProperty
+[DT295_R02.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[DT295_R02.DeviceInstall.HW]
+AddReg=DT295_R02.DeviceSetup.AddReg
+[DT295_R02.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{82C204EA-A858-4EEA-A58B-4B26FA9893BE}"
+
+[DT295.DeviceSetup.AddProperty]
+{afd97640-86a3-4210-b67c-289c41aabe55},3,0x00000011,,0
+
+[Strings]
+AuthorName="px4_drv contributors"
+DT295_R01.DeviceDesc="PIXELA PIX-DT295 Rev.01 ISDB-T Receiver (WinUSB)"
+DT295_R02.DeviceDesc="PIXELA PIX-DT295 Rev.02 ISDB-T Receiver (WinUSB)"

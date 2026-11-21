@@ -106,6 +106,24 @@ foreach ($build_platform in $build_platforms) {
         throw "torne core test failed. platform: $build_platform"
     }
 
+    # PIX-DT295 common layer (mock device) and card UART layer.
+    msbuild tests/dt295_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT295 core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dt295_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT295 core test failed. platform: $build_platform"
+    }
+    msbuild tests/dt295_card_uart_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT295 card UART test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dt295_card_uart_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT295 card UART test failed. platform: $build_platform"
+    }
+
     # Shared diagnostics, TS continuity, USB history, and fixed-point C/N conversion.
     msbuild tests/diagnostics_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
@@ -152,6 +170,8 @@ New-Item -ItemType Directory dist/BonDriver_T230C_32bit
 New-Item -ItemType Directory dist/BonDriver_T230C_64bit
 New-Item -ItemType Directory dist/BonDriver_Torne_32bit
 New-Item -ItemType Directory dist/BonDriver_Torne_64bit
+New-Item -ItemType Directory dist/BonDriver_DT295_32bit
+New-Item -ItemType Directory dist/BonDriver_DT295_64bit
 
 # BonDriver_PX4_32bit のファイルをコピー
 Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_PX4_32bit/BonDriver_PX4-T.dll
@@ -352,6 +372,20 @@ Copy-Item pkg/BonDriver_PX4/BonDriver_Torne-T.ChSet.txt dist/BonDriver_Torne_64b
 Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_Torne_64bit/BonDriver_Torne.dll
 Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_Torne_64bit/DriverHost_PX4.exe
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_Torne_64bit/DriverHost_PX4.ini
+
+
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DT295.ini dist/BonDriver_DT295_32bit/BonDriver_DT295.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_32bit/BonDriver_DT295-T.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_DT295_32bit/BonDriver_DT295.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_DT295_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DT295_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DT295.ini dist/BonDriver_DT295_64bit/BonDriver_DT295.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_64bit/BonDriver_DT295-T.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_DT295_64bit/BonDriver_DT295.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_DT295_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DT295_64bit/DriverHost_PX4.ini
 
 # 各 BonDriver と同じビット数の WinSCard.dll を配置
 # WinUSB 版の全対応機種で内蔵カードリーダーを利用できる

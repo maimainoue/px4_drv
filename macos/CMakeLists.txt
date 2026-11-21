@@ -64,6 +64,7 @@ include_directories(
     "${DRIVER_DIR}/common/ts"
     "${DRIVER_DIR}/common/signal"
     "${DRIVER_DIR}/common/torne"
+    "${DRIVER_DIR}/common/dt295"
     "${LIBUSB_INCLUDE_DIRS}"
 )
 
@@ -128,6 +129,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/siano_protocol.cpp"
     "${HOST_SRC}/devices/siano_wire.cpp"
     "${HOST_SRC}/devices/torne_device.cpp"
+    "${HOST_SRC}/devices/dt295_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
     "${HOST_SRC}/core/receiver_base.cpp"
@@ -150,6 +152,11 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/torne/torne_bridge.c"
     "${DRIVER_DIR}/common/torne/torne_dib.c"
     "${DRIVER_DIR}/common/torne/torne_card.c"
+    "${DRIVER_DIR}/common/dt295/dt295_link.c"
+    "${DRIVER_DIR}/common/dt295/dt295_board.c"
+    "${DRIVER_DIR}/common/dt295/dt295_frontend.c"
+    "${DRIVER_DIR}/common/dt295/dt295_program.c"
+    "${DRIVER_DIR}/common/dt295/dt295_card.c"
     "${DRIVER_DIR}/common/signal/signal_stat.c"
     "${DRIVER_DIR}/common/demod/cxd2856er.c"
     "${DRIVER_DIR}/common/demod/cxd2858er.c"
@@ -309,6 +316,23 @@ if(BUILD_TESTING)
         "${REPO_ROOT}/tests/torne_card_uart_test.c"
         "${DRIVER_DIR}/common/torne/torne_card.c")
     add_test(NAME torne_card_uart_test COMMAND torne_card_uart_test)
+
+    # PIX-DT295 の共通層 (模擬機材) とカード UART 層の自動試験。
+    add_executable(dt295_core_test
+        "${REPO_ROOT}/tests/dt295_core_test.c"
+        "${DRIVER_DIR}/common/dt295/dt295_link.c"
+        "${DRIVER_DIR}/common/dt295/dt295_board.c"
+        "${DRIVER_DIR}/common/dt295/dt295_frontend.c"
+        "${DRIVER_DIR}/common/dt295/dt295_program.c")
+    target_include_directories(dt295_core_test PRIVATE "${DRIVER_DIR}/common/dt295")
+    add_test(NAME dt295_core_test COMMAND dt295_core_test)
+
+    add_executable(dt295_card_uart_test
+        "${REPO_ROOT}/tests/dt295_card_uart_test.c"
+        "${DRIVER_DIR}/common/dt295/dt295_card.c"
+        "${DRIVER_DIR}/common/torne/torne_card.c")
+    target_include_directories(dt295_card_uart_test PRIVATE "${DRIVER_DIR}/common/dt295" "${DRIVER_DIR}/common/torne")
+    add_test(NAME dt295_card_uart_test COMMAND dt295_card_uart_test)
 
     # 全機種共通の ATR / T=1 状態機械の模擬 I/O 回帰試験。
     add_executable(smart_card_state_test
