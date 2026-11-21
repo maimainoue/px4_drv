@@ -6,9 +6,9 @@
 #ifndef __TSMF_H__
 #define __TSMF_H__
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/types.h>
-#elif defined(__APPLE__) || defined(_WIN32) || defined(_WIN64)
+#elif defined(__APPLE__) || defined(PX4_USERLAND) || defined(_WIN32) || defined(_WIN64)
 #include "misc_win.h"
 #endif
 

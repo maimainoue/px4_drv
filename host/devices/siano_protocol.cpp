@@ -11,6 +11,7 @@
 #include <array>
 #include <atomic>
 #include <cerrno>
+#include <condition_variable>
 #include <cstring>
 #include <fstream>
 #include <limits>

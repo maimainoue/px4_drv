@@ -14,7 +14,7 @@
 #include "cxd2858er.h"
 #include "px4_log_category.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/delay.h>
 #endif
 

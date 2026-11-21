@@ -9,8 +9,8 @@
 #include <thread>
 #include <utility>
 
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
+#if defined(__APPLE__) || defined(PX4_USERLAND)
+#include <exe_path.h>
 #include <libusb.h>
 #endif
 
@@ -99,7 +99,7 @@ int SianoDevice::FindStreamEndpoint(std::uint8_t &endpoint,
 		response_alignment = pipe.MaximumPacketSize > 8
 			? static_cast<std::size_t>(pipe.MaximumPacketSize - 8) : 0;
 	}
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(PX4_USERLAND)
 	libusb_device *usb_device = libusb_get_device(usb_dev_.handle);
 	libusb_config_descriptor *config = nullptr;
 	int ret = libusb_get_active_config_descriptor(usb_device, &config);
@@ -157,10 +157,9 @@ int SianoDevice::Init()
 	const DWORD executable_length = GetModuleFileNameW(nullptr, executable_path, 32768);
 	if (executable_length && executable_length < 32768)
 		executable_directory = std::filesystem::path(executable_path).parent_path();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(PX4_USERLAND)
 	char executable_path[4096];
-	uint32_t executable_length = sizeof(executable_path);
-	if (_NSGetExecutablePath(executable_path, &executable_length) == 0)
+	if (px4::GetExecutablePath(executable_path, sizeof(executable_path)))
 		executable_directory = std::filesystem::path(executable_path).parent_path();
 #endif
 	if (!executable_directory.empty() && firmware.is_relative())

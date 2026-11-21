@@ -154,7 +154,7 @@ static int init_b_cas_card(void *bcas)
 {
 	int m;
 	long ret;
-	uint32_t len;
+	DWORD len;	/* PC/SC のポインター引数の型 (macOS は 32 bit、Linux の pcsc-lite は unsigned long) */
 	uint32_t reader_pool_len;
 	int use_internal = 0;
 	char internal_reader[128] = {};
@@ -691,7 +691,8 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, const char *reader_name)
 	int m,n;
 	
 	long ret;
-	uint32_t rlen,protocol;
+	uint32_t rlen;
+	DWORD protocol;
 
 	uint8_t *p;
 	
@@ -798,8 +799,14 @@ static long transmit_card(B_CAS_CARD_PRIVATE_DATA *prv,
 		return px4_internal_card_transmit(send_buffer, send_length,
 			receive_buffer, receive_length) ? SCARD_S_SUCCESS : SCARD_E_NOT_TRANSACTED;
 	}
-	return SCardTransmit(prv->card, send_pci, send_buffer, send_length,
-		receive_pci, receive_buffer, receive_length);
+	{
+		DWORD received = *receive_length;
+		const long ret = SCardTransmit(prv->card, send_pci, send_buffer, send_length,
+			receive_pci, receive_buffer, &received);
+
+		*receive_length = (uint32_t)received;
+		return ret;
+	}
 }
 
 static void extract_power_on_ctrl_response(B_CAS_PWR_ON_CTRL *dst, uint8_t *src)

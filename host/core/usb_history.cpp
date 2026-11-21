@@ -3,6 +3,7 @@
 #include "usb_history.h"
 
 #include <atomic>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
 

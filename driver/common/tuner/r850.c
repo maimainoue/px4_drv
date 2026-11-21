@@ -12,7 +12,7 @@
 #include "r850.h"
 #include "px4_log_category.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/string.h>

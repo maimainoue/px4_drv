@@ -11,7 +11,7 @@
 #include <stdexcept>
 #include <system_error>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 #include <libusb.h>
 #endif
 
@@ -354,7 +354,7 @@ int Dt295Device::Control(u8 request_type, u16 value, u16 index,
 	if (waited >= timeout)
 		return -ETIMEDOUT;
 	const unsigned int transfer_timeout = timeout - static_cast<unsigned int>(waited);
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 	const int ret = libusb_control_transfer(usb_dev_.handle, request_type, 0xbc,
 		value, index, static_cast<unsigned char *>(buffer), length, transfer_timeout);
 	if (ret < 0) {

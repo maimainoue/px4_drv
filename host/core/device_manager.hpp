@@ -13,7 +13,7 @@
 
 #include <guiddef.h>
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 // Use angle-bracket form so the compiler searches -I paths in order.
 // macos/src/DriverHost_PX4 is listed first, so the libusb-based
 // device_notifier.hpp is found instead of the Windows version here.

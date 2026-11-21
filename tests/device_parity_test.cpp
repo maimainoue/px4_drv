@@ -405,8 +405,7 @@ int main()
 		ok = false;
 	}
 	if (!linux_ids.count({0x04bb, 0x0530})) {
-		std::fprintf(stderr, "Linux lacks XZ 04bb:0530
-");
+		std::fprintf(stderr, "Linux lacks XZ 04bb:0530\n");
 		ok = false;
 	}
 	for (const auto &d : mac_set) {

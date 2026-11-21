@@ -2,7 +2,8 @@
 
 #include "util.hpp"
 
-#include <mach-o/dyld.h>
+#include "exe_path.h"
+
 #include <climits>
 #include <cstdlib>
 #include <cstring>
@@ -124,9 +125,8 @@ static std::wstring file_base;
 bool Init(void */* mod */)
 {
 	char buf[PATH_MAX];
-	uint32_t size = sizeof(buf);
 
-	if (_NSGetExecutablePath(buf, &size) != 0)
+	if (!GetExecutablePath(buf, sizeof(buf)))
 		return false;
 
 	// Resolve symlinks
