@@ -420,13 +420,17 @@ if(BUILD_TESTING)
     add_test(NAME shared_stream_failure_test COMMAND shared_stream_failure_test)
 
     # libusbの失敗・cancel完了を模擬し、実際のmacOS転送層を検証する。
-    add_executable(itedtv_usb_failure_test
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_usb_failure_test.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_bus_libusb_test_wrapper.c"
-        "${HOST_SRC}/core/usb_history.cpp"
-        "${HOST_SRC}/common/msg_log.c"
-        "${MACOS_SRC}/common/msg.c")
-    add_test(NAME itedtv_usb_failure_test COMMAND itedtv_usb_failure_test)
+    # macOS 専用の API (<malloc/malloc.h> の malloc_size) を使うため、Linux では登録しない。
+    if(APPLE)
+        add_executable(itedtv_usb_failure_test
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_usb_failure_test.c"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_bus_libusb_test_wrapper.c"
+            "${HOST_SRC}/core/usb_history.cpp"
+            "${HOST_SRC}/common/msg_log.c"
+            "${MACOS_SRC}/common/msg.c")
+        add_test(NAME itedtv_usb_failure_test COMMAND itedtv_usb_failure_test)
+        set_tests_properties(itedtv_usb_failure_test PROPERTIES TIMEOUT 10)
+    endif()
 
     # 作った TS で、TSMF の TS 番号による選択・ヘッダーのない搬送波の素通し・分割 TLV の判定を確認する。
     add_executable(tsmf_filter_test
@@ -505,25 +509,28 @@ if(BUILD_TESTING)
     add_test(NAME stream_buffer_test COMMAND stream_buffer_test)
 
     # StreamBuffer の異常通知が data pipe の client にEOFを返すことを実接続で検証する。
-    add_executable(stream_server_failure_test
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/stream_server_failure_test.cpp"
-        "${MACOS_SRC}/common/pipe.cpp"
-        "${HOST_SRC}/common/msg_log.c"
-        "${MACOS_SRC}/common/msg.c"
-        "${MACOS_SRC}/DriverHost_PX4/misc_posix.c"
-        "${MACOS_SRC}/DriverHost_PX4/pipe_server.cpp"
-        "${HOST_SRC}/core/stream_server.cpp"
-        "${HOST_SRC}/core/server_base.cpp"
-        "${HOST_SRC}/core/receiver_base.cpp"
-        "${DRIVER_DIR}/common/ts/tsmf.c"
-        "${HOST_SRC}/core/ts_stats.cpp"
-        "${HOST_SRC}/core/receiver_manager.cpp"
-        "${HOST_SRC}/core/ringbuffer.cpp")
-    target_compile_definitions(stream_server_failure_test PRIVATE _DEFAULT_SOURCE)
-    add_test(NAME stream_server_failure_test COMMAND stream_server_failure_test)
-    set_tests_properties(stream_server_failure_test PROPERTIES TIMEOUT 10)
+    # macOS 専用のソケットオプション (SO_NOSIGPIPE) を使うため、Linux では登録しない。
+    if(APPLE)
+        add_executable(stream_server_failure_test
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stream_server_failure_test.cpp"
+            "${MACOS_SRC}/common/pipe.cpp"
+            "${HOST_SRC}/common/msg_log.c"
+            "${MACOS_SRC}/common/msg.c"
+            "${MACOS_SRC}/DriverHost_PX4/misc_posix.c"
+            "${MACOS_SRC}/DriverHost_PX4/pipe_server.cpp"
+            "${HOST_SRC}/core/stream_server.cpp"
+            "${HOST_SRC}/core/server_base.cpp"
+            "${HOST_SRC}/core/receiver_base.cpp"
+            "${DRIVER_DIR}/common/ts/tsmf.c"
+            "${HOST_SRC}/core/ts_stats.cpp"
+            "${HOST_SRC}/core/receiver_manager.cpp"
+            "${HOST_SRC}/core/ringbuffer.cpp")
+        target_compile_definitions(stream_server_failure_test PRIVATE _DEFAULT_SOURCE)
+        add_test(NAME stream_server_failure_test COMMAND stream_server_failure_test)
+        set_tests_properties(stream_server_failure_test PROPERTIES TIMEOUT 10)
+    endif()
 
-    set_tests_properties(itedtv_usb_failure_test j83b_driver_test chset_loader_test stream_buffer_test PROPERTIES TIMEOUT 10)
+    set_tests_properties(j83b_driver_test chset_loader_test stream_buffer_test PROPERTIES TIMEOUT 10)
     # 異常と開始要求の同時実行を繰り返すため、Sanitizer ビルドでも収まる上限にする。
     set_tests_properties(shared_stream_failure_test PROPERTIES TIMEOUT 60)
     # 指定時間の正常終了を複数回試すため、他の短時間テストとは別にする。

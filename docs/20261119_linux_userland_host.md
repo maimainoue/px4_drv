@@ -80,6 +80,7 @@ DT295 の「チューナー `0x08 = 0x05`」と「復調器 `0x01 = 0x40`」を�
 ### 未確認のこと
 
 - DT295 以外の機種 (PX-W3U4、PX-MLT5PE、TBS 5530、torne、GV-MVP/XZ、PX-S1UD、T230A) での、Linux のユーザーランド版の動作。
+- R850 チューナーを使う機種 (PX4 系、ISDB2056 系、ISDBT2071 系) での、Linux のユーザーランド版の動作。ユーザーランドでは、`mdelay` が何もしない定義 (`winusb/src/DriverHost_PX4/misc_win.h` と `macos/src/DriverHost_PX4/misc_posix.h`) のため、`driver/common/tuner/r850.c` の `mdelay(2)` と `mdelay(5)` は待機しません (`msleep` は実際に待ちます)。Windows と macOS では、元から同じ動作で、Linux のユーザーランド版も同じ定義を使います。待機が不要かどうかは、R850 の仕様では確認していません。
 - カードリーダー (B-CAS)、`--b25` での復号、`pcscd` との組み合わせ。
 - ホストの常用 (起動の自動化、`udev` の権限、`root` なしでの起動)。常用する構成ではないため、整備していません。
 - macOS のビルドと動作が、この変更で退行していないこと (macOS の環境がなく、未確認)。
@@ -91,8 +92,8 @@ Debian 13 (カーネル 6.12.117) の実機のホスト (仮想マシンを使�
 
 ### ビルドと自動試験
 
-- `cmake -S macos -B build` の全ターゲットのうち、`macos` 専用の API を使う 2 本の試験を除くすべてがビルドできました。ビルドできない 2 本は、`itedtv_usb_failure_test` (`malloc/malloc.h`) と `stream_server_failure_test` (`SO_NOSIGPIPE`) です。
-- `ctest` は、30 本中 28 本が通りました。通った中には、機種の定義が OS 間で一致することを検査する `device_parity_test` と、各機種の共通層の試験 (`torne`、`xz`、`dt295`、`t230c`、`siano` など) を含みます。上の 2 本は、ビルドできないため実行されていません。
+- `cmake -S macos -B build` の全ターゲットが、ビルドできました。`macos` 専用の API を使う 2 本の試験、`itedtv_usb_failure_test` (`malloc/malloc.h`) と `stream_server_failure_test` (`SO_NOSIGPIPE`) は、Linux では登録しません (`if(APPLE)`)。
+- `ctest` は、28 本すべてが通りました。通った中には、機種の定義が OS 間で一致することを検査する `device_parity_test` と、各機種の共通層の試験 (`torne`、`xz`、`dt295`、`t230c`、`siano` など) を含みます。
 - 同じ変更で、Windows (MSVC v143 の x64 と x86) の全体のビルドと、共通層の自動試験 (TBS 5530、GV-MVP/XZ、PIX-DT295) が通ること、Linux のカーネルモジュールがビルドできることを確認しました。
 
 ### 実機
