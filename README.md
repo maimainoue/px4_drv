@@ -31,8 +31,10 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | MyGica T230A (USB `0572:689a`) | △ | △ | △ | ISDB-C (実験的。T230C2 と同じ USB ブリッジ、Si2168、Si2141 を共有し、GPIO の手順だけが異なる)。実機確認は Linux 6.12 のみ。Windows と macOS は INF と設定を追加しただけで実機未確認。詳細は [T230C / T230A の別紙](docs/t230c.md) |
 | Siano RIO (PX-S1UD V2.0 / PX-Q1UD 系) | △ | △ | △ | ISDB-T のみ (実験的)。実機確認は Windows と、Linux 6.12 の PX-S1UD V2.0 (ISDB-T を 30 秒受信) まで。PX-Q1UD の1機能に未解決の受信差がある。詳細は [Siano の別紙](docs/siano_tuners.md) |
 | Sony CECH-ZD1 J (`054c:04b2`) | △ | △ | △ | ISDB-T 1基。macOS で30分受信、カード、復号を確認済み。Windows / Linux の実機は未確認。Linux は `/dev/tornevideo*` |
+| PIXELA PIX-DT295 (`06b8:103b` / `06b8:105c`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (2 台の同時受信とカード)、macOS 11 の Intel Mac (2 台の同時受信と B-CAS の復号) まで。macOS では、スリープからの復帰後に選局に失敗し、`DriverHost_PX4` の再起動が必要になる。BS/CS は対象外。詳細は [DT295 の別紙](docs/devices/dt295.md) |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
+PIX-DT295 は、Linux、Windows、macOS (Intel Mac、macOS 11) の受信経路を実機で確認しています。確認範囲と未確認の条件は [DT295 の別紙](docs/devices/dt295.md) に記載しています。
 
 ## 機種別資料
 
@@ -40,6 +42,7 @@ T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが�
 - [T230C / T230C2 の Linux 参照手順と方式の制限](docs/t230c_linux_reference.md)
 - [Siano RIO と対応チューナー](docs/siano_tuners.md)
 - [Sony CECH-ZD1 J (torne)](docs/devices/torne.md)
+- [PIXELA PIX-DT295](docs/devices/dt295.md)
 
 設計記録、検証記録、カードリーダーの実装経緯を含む全文書の一覧は [docs/README.md](docs/README.md) にあります。
 
@@ -231,6 +234,10 @@ python3 tools/tune_latency.py --json DriverHost_PX4.log
 
 	- CECH-ZD1 J (ISDB-T のみ・実験的)
 
+- PIXELA
+
+	- PIX-DT295 (Rev.01 `06b8:103b` / Rev.02 `06b8:105c`。ISDB-T と内蔵カードのみ・実験的。Linux、Windows、macOS (Intel Mac) で確認済み。詳細は [DT295 の別紙](docs/devices/dt295.md))
+
 - e-Better
 
 	- DTV02-1T1S-U (実験的)
@@ -303,6 +310,7 @@ certutil.exe -addstore TrustedPublisher ".\px4_drv_winusb.cer"
 - MyGica T230C (0572:C68A): `BonDriver_T230C` (実験的、ISDB-C / J.83B)
 - MyGica T230A (0572:689A): `BonDriver_T230C` (実験的、ISDB-C。T230C と同じ BonDriver が両方の機種を扱う)
 - Sony CECH-ZD1 J: `BonDriver_Torne` (実験的、ISDB-T のみ)
+- PIXELA PIX-DT295 (Rev.01、Rev.02): `BonDriver_DT295` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
 
 お使いの PC に合うビット数のフォルダの中のファイルを**すべて**選択し、TVTest や EDCB などのソフトウェアが指定する BonDriver の配置フォルダにコピーします。  
 BonDriver と同じフォルダに DriverHost_PX4.exe / DriverHost_PX4.ini / it930x-firmware.bin があることを確認してください。Siano RIO のパッケージには `isdbt_rio.inp` と `LICENCE.siano` も含まれます。T230C の Si2168 / Si2141 のファームウェアは再配布できないため、[T230C の説明](docs/t230c.md)に従って配置してください。
@@ -317,6 +325,8 @@ BonDriver と同じフォルダに DriverHost_PX4.exe / DriverHost_PX4.ini / it9
 PX-S1UD V2.0、PX-Q1UD、MyGica T230C は内蔵カードリーダーを搭載していないため、B-CAS カードには外付けカードリーダーが必要です。
 
 Sony CECH-ZD1 J の内蔵 B-CAS カードスロットも `Sony CECH-ZD1 J Smart Card Reader` として利用できます。torne は地上デジタル専用で、BS / CS の受信には対応していません。
+
+PIXELA PIX-DT295 の内蔵 B-CAS カードスロットも、`PIXELA PIX-DT295 Rev.01 Smart Card Reader` (Rev.02 は `PIXELA PIX-DT295 Rev.02 Smart Card Reader`) として利用できます。DT295 は地上デジタル専用で、BS / CS の受信には対応していません。
 
 機種別の BonDriver フォルダに同梱されている `WinSCard.dll` を、TVTest や EDCB など、B-CAS カードを利用するアプリケーションの実行ファイルと同じフォルダにコピーしてください。
 
@@ -345,6 +355,8 @@ Sony CECH-ZD1 J の内蔵 B-CAS カードスロットも `Sony CECH-ZD1 J Smart 
 > **内蔵カードリーダーを使うために、PC に接続されているすべてのチューナーに B-CAS カードを挿入する必要はありません。** 内蔵カードリーダーは、受信中チューナーと異なるデバイスでも利用できます。
 
 torne では受信に使う `BonDriver_Torne.dll` と B-CAS カードを挿したリーダーを、TVTest で別々に選べます。TS プロセッサーの「デフォルトフィルター」で `Sony CECH-ZD1 J Smart Card Reader` を選び、TVTest を再起動してください。
+
+DT295 でも、受信に使う `BonDriver_DT295.dll` と B-CAS カードを挿したリーダーを、TVTest で別々に選べます。TS プロセッサーの「デフォルトフィルター」で `PIXELA PIX-DT295 Rev.01 Smart Card Reader` (または Rev.02) を選び、TVTest を再起動してください。
 
 > [!NOTE]  
 > `WinSCard.dll` は必要に応じて同じフォルダの `DriverHost_PX4.exe` を起動し、内蔵カードリーダーとの通信を仲介します。  
@@ -514,6 +526,36 @@ gcc, make, カーネルソース/ヘッダ, dkms がインストールされて�
 	/dev/isdb6014video1  /dev/isdb6014video3
 
 すべてのチューナーにおいて、ISDB-T と ISDB-S のどちらも受信可能です。
+
+##### MyGica T230C / T230A を接続した場合
+
+	$ ls /dev/px4video*
+	/dev/px4video0
+
+受信できるのは ISDB-C のみです (T230C は J.83B も受信できます)。T230C と T230A は、チューナーを 1 つ持ちます。
+
+##### PLEX PX-S1UD V2.0 / PX-Q1UD を接続した場合
+
+	$ ls /dev/px4video*
+	/dev/px4video0
+
+受信できるのは ISDB-T のみで、USB function ごとに 1 つのデバイスファイルが作成されます。PX-S1UD V2.0 の USB function は 1 つです。
+Linux 標準の `smsusb` ドライバーも同じ USB ID に結び付くため、先に `smsusb` から unbind する必要があります。詳細は [Siano の別紙](docs/siano_tuners.md) を参照してください。
+
+##### Sony CECH-ZD1 J を接続した場合
+
+	$ ls /dev/tornevideo*
+	/dev/tornevideo0
+
+受信できるのは ISDB-T のみです。
+
+##### PIXELA PIX-DT295 (Rev.01 / Rev.02) を接続した場合
+
+	$ ls /dev/dt295video*
+	/dev/dt295video0  /dev/dt295video1
+
+受信できるのは ISDB-T のみで、1 台につき 1 つのデバイスファイルが作成されます (上の例は 2 台を接続した場合です)。
+起動直後の機材だけが対象です。詳細は [DT295 の別紙](docs/devices/dt295.md) を参照してください。
 
 ### 4. 内蔵 B-CAS カードリーダーの利用
 
@@ -985,7 +1027,7 @@ C 専用オプションを T/S と併用した場合と、値が範囲外の場�
 > `--b25` を使用する場合は、macOS に接続された PC/SC 対応 IC カードリーダーに B-CAS カードを挿入してください。  
 > macOS の PC/SC フレームワーク (`PCSC.framework`) を使用するため、追加のドライバやライブラリは不要です。
 
-torne の内蔵カードスロットを macOS の PC/SC アプリケーションで使う場合は、[macOS / Linux 用 IFD ハンドラー](pcsc/README.md)を導入してください。DriverHost_PX4 を先に起動しておく必要があります。
+torne と PIX-DT295 の内蔵カードスロットを macOS の PC/SC アプリケーションで使う場合は、[macOS / Linux 用 IFD ハンドラー](pcsc/README.md)を導入してください。DriverHost_PX4 を先に起動しておく必要があります。
 
 ### 7. mirakurun との連携
 
