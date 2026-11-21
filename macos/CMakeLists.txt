@@ -66,6 +66,7 @@ include_directories(
     "${DRIVER_DIR}/common/torne"
     "${DRIVER_DIR}/common/xz"
     "${DRIVER_DIR}/common/dt295"
+    "${DRIVER_DIR}/common/tbs5530"
     "${LIBUSB_INCLUDE_DIRS}"
 )
 
@@ -132,6 +133,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/torne_device.cpp"
     "${HOST_SRC}/devices/xz_device.cpp"
     "${HOST_SRC}/devices/dt295_device.cpp"
+    "${HOST_SRC}/devices/tbs5530_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
     "${HOST_SRC}/core/receiver_base.cpp"
@@ -164,6 +166,7 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/dt295/dt295_frontend.c"
     "${DRIVER_DIR}/common/dt295/dt295_program.c"
     "${DRIVER_DIR}/common/dt295/dt295_card.c"
+    "${DRIVER_DIR}/common/tbs5530/tbs5530_core.c"
     "${DRIVER_DIR}/common/signal/signal_stat.c"
     "${DRIVER_DIR}/common/demod/cxd2856er.c"
     "${DRIVER_DIR}/common/demod/cxd2858er.c"

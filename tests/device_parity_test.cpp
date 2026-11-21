@@ -266,6 +266,51 @@ int main()
 		ok = false;
 	}
 	/*
+	 * TurboSight TBS 5530: 地上波 1 受信機。macOS と WinUSB の機種定義が同じ VID/PID を持ち、WinUSB の INF が同じ
+	 * DeviceInterfaceGUID とハードウェア ID を持つこと。
+	 */
+	for (const auto &[os_name, devices] : {
+		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+		bool found_tbs = false;
+		for (const auto &d : *devices) {
+			if (d.type != "TBS5530")
+				continue;
+			found_tbs = true;
+			if (d.systems != std::set<std::string>{"ISDB-T"}) {
+				std::fprintf(stderr, "%s TBS5530 must expose one ISDB-T receiver\n", os_name);
+				ok = false;
+			}
+			if (d.vid != 0x734c || d.pid != 0x5530) {
+				std::fprintf(stderr, "%s TBS5530 has %04x:%04x, expected 734c:5530\n", os_name, d.vid, d.pid);
+				ok = false;
+			}
+			if (d.interface_guid.empty()) {
+				std::fprintf(stderr, "%s TBS5530 lacks DeviceInterfaceGUID\n", os_name);
+				ok = false;
+			}
+		}
+		if (!found_tbs) {
+			std::fprintf(stderr, "%s INI lacks TBS5530 734c:5530\n", os_name);
+			ok = false;
+		}
+	}
+	if (px4::ParseDeviceType(L"TBS5530") == px4::DeviceType::UNKNOWN) {
+		std::fprintf(stderr, "device factory does not know Type=TBS5530\n");
+		ok = false;
+	}
+	std::string tbs_interface_guid;
+	for (const auto &d : win)
+		if (d.type == "TBS5530")
+			tbs_interface_guid = d.interface_guid;
+	std::ifstream tbs_inf(root + "/winusb/pkg/inf/TBS5530.inf", std::ios::binary);
+	const std::string tbs_inf_text((std::istreambuf_iterator<char>(tbs_inf)), std::istreambuf_iterator<char>());
+	if (tbs_interface_guid.empty() || tbs_inf_text.find("USB\\VID_734C&PID_5530") == std::string::npos ||
+	    tbs_inf_text.find(tbs_interface_guid) == std::string::npos) {
+		std::fprintf(stderr, "TBS5530.inf does not match the WinUSB device definition\n");
+		ok = false;
+	}
+	/*
 	 * PIX-DT295: Rev.01 (06b8:103b) と Rev.02 (06b8:105c)。それぞれ別の DeviceInterfaceGUID を持ち、
 	 * WinUSB の INF が同じ GUID とハードウェア ID を持つこと。
 	 */

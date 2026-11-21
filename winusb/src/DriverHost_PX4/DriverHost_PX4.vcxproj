@@ -107,37 +107,37 @@
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-static|Win32'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release-static|x64'">
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>build\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(SolutionDir)src\common;$(SolutionDir)..\host\common;$(ProjectDir);$(ProjectDir)..\..\..\driver\common\include;$(ProjectDir)..\..\..\driver\common\bridge;$(ProjectDir)..\..\..\driver\common\demod;$(ProjectDir)..\..\..\driver\common\tuner;$(ProjectDir)..\..\..\driver\common\ts;$(ProjectDir)..\..\..\driver\common\signal;$(ProjectDir)..\..\..\driver\common\torne;$(ProjectDir)..\..\..\driver\common\xz;$(ProjectDir)..\..\..\driver\common\dt295;$(ProjectDir)..\..\..\driver\common\tbs5530;$(ProjectDir)..\..\..\host\core;$(ProjectDir)..\..\..\host\devices;</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -269,6 +269,7 @@
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_frontend.c" />
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_program.c" />
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_card.c" />
+    <ClCompile Include="..\..\..\driver\common\tbs5530\tbs5530_core.c" />
     <ClCompile Include="..\..\..\driver\common\demod\si2168.c" />
     <ClCompile Include="..\..\..\driver\common\tuner\si2141.c" />
     <ClCompile Include="..\..\..\driver\common\ts\t230c_ts_sync.c" />
@@ -298,6 +299,7 @@
     <ClCompile Include="..\..\..\host\devices\torne_device.cpp" />
     <ClCompile Include="..\..\..\host\devices\xz_device.cpp" />
     <ClCompile Include="..\..\..\host\devices\dt295_device.cpp" />
+    <ClCompile Include="..\..\..\host\devices\tbs5530_device.cpp" />
     <ClCompile Include="..\..\..\host\devices\siano_protocol.cpp" />
     <ClCompile Include="..\..\..\host\devices\siano_wire.cpp" />
     <ClCompile Include="itedtv_bus_winusb.c" />
@@ -365,6 +367,7 @@
     <ClInclude Include="..\..\..\driver\common\dt295\dt295_core.h" />
     <ClInclude Include="..\..\..\driver\common\dt295\dt295_card.h" />
     <ClInclude Include="..\..\..\driver\common\dt295\dt295_program_gen.h" />
+    <ClInclude Include="..\..\..\driver\common\tbs5530\tbs5530_core.h" />
     <ClInclude Include="..\..\..\driver\common\demod\si2168.h" />
     <ClInclude Include="..\..\..\driver\common\tuner\si2141.h" />
     <ClInclude Include="..\..\..\driver\common\ts\t230c_ts_sync.h" />
@@ -372,6 +375,7 @@
     <ClInclude Include="..\..\..\host\devices\torne_device.hpp" />
     <ClInclude Include="..\..\..\host\devices\xz_device.hpp" />
     <ClInclude Include="..\..\..\host\devices\dt295_device.hpp" />
+    <ClInclude Include="..\..\..\host\devices\tbs5530_device.hpp" />
     <ClInclude Include="..\..\..\host\devices\siano_protocol.hpp" />
     <ClInclude Include="..\..\..\host\devices\siano_wire.hpp" />
     <ClInclude Include="misc_win.h" />

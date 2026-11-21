@@ -43,6 +43,9 @@
 #define USB_VID_IODATA 0x04bb
 #define USB_PID_IODATA_GV_MVP_XZ 0x0530
 
+#define USB_VID_TBS 0x734c
+#define USB_PID_TBS_5530 0x5530
+
 
 enum px4_usb_device_type {
 	UNKNOWN_USB_DEVICE = 0,
@@ -59,6 +62,7 @@ enum px4_usb_device_type {
 	TORNE_USB_DEVICE,
 	DT295_USB_DEVICE,
 	XZ_USB_DEVICE,
+	TBS5530_USB_DEVICE,
 	//----
 	MAX_USB_DEVICE_TYPE,
 };
