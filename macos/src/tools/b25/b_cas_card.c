@@ -1,6 +1,7 @@
 #include "b_cas_card.h"
 #include "b_cas_card_error_code.h"
 
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -10,6 +11,16 @@
 	#include <windows.h>
 #endif
 #include <PCSC/winscard.h>
+
+/* PC/SC のポインター引数の型。SDK によっては DWORD が宣言されないため、ここで定める。
+ * Windows は DWORD、macOS は 32 bit、Linux の pcsc-lite は unsigned long。 */
+#if defined(WIN32)
+typedef DWORD pcsc_dword_t;
+#elif defined(__APPLE__)
+typedef uint32_t pcsc_dword_t;
+#else
+typedef unsigned long pcsc_dword_t;
+#endif
 
 /* px4rec の CardServer 経由で IT930x 内蔵 UART を使う fallback transport */
 extern int px4_internal_card_list(char *name, size_t capacity);
@@ -154,7 +165,7 @@ static int init_b_cas_card(void *bcas)
 {
 	int m;
 	long ret;
-	DWORD len;	/* PC/SC のポインター引数の型 (macOS は 32 bit、Linux の pcsc-lite は unsigned long) */
+	pcsc_dword_t len;
 	uint32_t reader_pool_len;
 	int use_internal = 0;
 	char internal_reader[128] = {};
@@ -692,7 +703,7 @@ static int connect_card(B_CAS_CARD_PRIVATE_DATA *prv, const char *reader_name)
 	
 	long ret;
 	uint32_t rlen;
-	DWORD protocol;
+	pcsc_dword_t protocol;
 
 	uint8_t *p;
 	
@@ -800,7 +811,7 @@ static long transmit_card(B_CAS_CARD_PRIVATE_DATA *prv,
 			receive_buffer, receive_length) ? SCARD_S_SUCCESS : SCARD_E_NOT_TRANSACTED;
 	}
 	{
-		DWORD received = *receive_length;
+		pcsc_dword_t received = *receive_length;
 		const long ret = SCardTransmit(prv->card, send_pci, send_buffer, send_length,
 			receive_pci, receive_buffer, &received);
 
