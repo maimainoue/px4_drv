@@ -152,6 +152,16 @@ foreach ($build_platform in $build_platforms) {
         throw "TBS 5530 core test failed. platform: $build_platform"
     }
 
+    # 機種表の整合 (Windows と macOS の ini、WinUSB の INF、Linux の USB ID 表、機種ファクトリー)。
+    msbuild tests/device_parity_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "device parity test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/device_parity_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "device parity test failed. platform: $build_platform"
+    }
+
     # Shared diagnostics, TS continuity, USB history, and fixed-point C/N conversion.
     msbuild tests/diagnostics_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
