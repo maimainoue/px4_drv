@@ -30,7 +30,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | MyGica T230C 系 (USB `0572:c68a` は Linux の ID 表で T230C2) | △ | △ | △ | ISDB-C と J.83B (実験的)。ISDB-C の実機確認は Windows のみ。J.83B は実機信号で未確認 |
 | MyGica T230A (USB `0572:689a`) | △ | △ | △ | ISDB-C と J.83B (実験的。T230C2 と同じ USB ブリッジ、Si2168、Si2141 を共有し、GPIO の手順だけが異なる)。ISDB-C の実機確認は Linux 6.12 のみ。J.83B は実装と自動試験のみで、実機信号で未確認。Windows と macOS は INF と設定を追加しただけで実機未確認。詳細は [T230C / T230A の別紙](docs/t230c.md) |
 | Siano RIO (PX-S1UD V2.0 / PX-Q1UD 系) | △ | △ | △ | ISDB-T のみ (実験的)。実機確認は Windows と、Linux 6.12 の PX-S1UD V2.0 (ISDB-T を 30 秒受信) まで。PX-Q1UD の1機能に未解決の受信差がある。詳細は [Siano の別紙](docs/siano_tuners.md) |
-| Sony CECH-ZD1 J (`054c:04b2`) | △ | △ | △ | ISDB-T 1基。macOS で30分受信、カード、復号を確認済み。Windows / Linux の実機は未確認。Linux は `/dev/tornevideo*` |
+| Sony CECH-ZD1 J (`054c:04b2`) | △ | △ | △ | ISDB-T 1基。macOS で30分受信、カード、復号を確認済み。Linux (6.1、6.8、6.12) で、受信 (10 分の同時受信)、カード (B-CAS の往復と、`pcscd` 経由の APDU)、unbind と `rmmod` の反復を確認済み。Windows の実機は未確認。Linux は `/dev/tornevideo*`。詳細は [torne の別紙](docs/devices/torne.md) |
 | PIXELA PIX-DT295 (`06b8:103b` / `06b8:105c`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (2 台の同時受信とカード)、macOS 11 の Intel Mac (2 台の同時受信と B-CAS の復号) まで。macOS では、スリープからの復帰後に選局に失敗し、`DriverHost_PX4` の再起動が必要になる。BS/CS は対象外。詳細は [DT295 の別紙](docs/devices/dt295.md) |
 | I-O DATA GV-MVP/XZ (`04bb:0530`。実機確認は XZ2 の 1 台) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (10 分の受信とカード)、macOS 11 の Intel Mac (11 分の受信と B-CAS の復号、抜去) まで。BS/CS は対象外。XZ と XZ3 の機材は未確認。詳細は [XZ の別紙](docs/devices/xz.md) |
 | TurboSight TBS 5530 (`734c:5530`) | △ | △ | △ | ISDB-T 1基 (実験的)。ISDB-C (CATV。J.83 Annex C、64QAM) も受信でき、Linux と macOS の実機で確認済み。Windows は実装のみで未確認 (Windows と macOS は `ExperimentalISDBC` で有効にする)。BS/CS (ISDB-S) は衛星側の M88RS6060 が DVB-S/S2 専用のため受信できない。ファームウェア `dvb-usb-id5530.fw` は利用者が用意する (毎回の接続で送る)。実機確認は Linux 6.12 (仮想マシンへのパススルーと実機のホスト)、macOS 11 の Intel Mac (DriverHost_PX4 で 60 秒の受信)、Windows 11 (BonDriver 経由の受信、10 分) まで。連続性エラーが出る (仮想マシンのパススルー経由は 10 秒あたり数十回。実機のホストでは、この環境で 5 秒に 1,700 回ほどの飛び) が、原因は未確認。カードリーダーを持たないため B-CAS は対象外。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) |
@@ -176,7 +176,7 @@ python3 tools/tune_latency.py --json DriverHost_PX4.log
 -  PX-MLT 系チューナー (PX-MLT5PE / PX-MLT8PE / DTV02A-4TS-P / DTV02A-5TS-P) において、WinUSB 版と同じくケーブルテレビ (トランスモジュレーション方式: ISDB-C) とスカパー！プレミアムサービス光 (J.83 Annex B) の受信に対応 (v0.7.0 以降)
   - 受信方法は [ケーブルテレビ (ISDB-C) / スカパー！プレミアムサービス光 (J.83B) の受信](#ケーブルテレビ-isdb-c--スカパープレミアムサービス光-j83b-の受信) を参照のこと
 - Siano RIO 系の PX-S1UD V2.0 / PX-Q1UD と、MyGica T230C2 の ISDB-C / J.83B 受信を `/dev/px4video*` として追加 (実験的、カーネルビルドのみ確認)
-- Sony CECH-ZD1 J の ISDB-T 受信を `/dev/tornevideo*` として追加 (実験的、カーネルビルドのみ確認)
+- Sony CECH-ZD1 J の ISDB-T 受信を `/dev/tornevideo*` として追加 (実験的、Linux 6.1、6.8、6.12 で受信とカードを確認)
 - ソースコードを OS 非依存の `driver/common/` と Linux 固有の `driver/linux/` に分け、WinUSB 版・macOS 版とチップ制御のコードを共有
 
 #### ドライバの品質改善
