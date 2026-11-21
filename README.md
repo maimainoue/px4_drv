@@ -47,6 +47,7 @@ PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の
 - [PIXELA PIX-DT295](docs/devices/dt295.md)
 - [I-O DATA GV-MVP/XZ](docs/devices/xz.md)
 - [TurboSight TBS 5530](docs/devices/tbs5530.md)
+- [確認用ツール (Linux のカーネルモジュール用。受信の質の集計、内蔵カードリーダーの試験)](docs/tools.md)
 
 設計記録、検証記録、カードリーダーの実装経緯を含む全文書の一覧は [docs/README.md](docs/README.md) にあります。
 

@@ -60,3 +60,4 @@
 | [20261113_common_fixes.md](20261113_common_fixes.md) | `ptx_chrdev` の cdev の寿命 (KASAN の use-after-free) と、torne の制御転送のバッファの修正 |
 | [20261119_linux_userland_host.md](20261119_linux_userland_host.md) | macOS 版のホスト (`libusb`) を Linux でもビルドして動かす構成 (`PX4_USERLAND` マクロ) と、DT295 での確認結果 |
 | [20261121_linux_other_kernels_validation.md](20261121_linux_other_kernels_validation.md) | Linux の別カーネル版 (Debian 12 のカーネル 6.1、Ubuntu 24.04 のカーネル 6.8) での検証 (QEMU の仮想マシンへ 10 台を USB パススルー。ビルド、DKMS、開始と停止、`kill -9`、`unbind`、`rmmod` と `insmod`、10 機材の 10 分の同時受信) |
+| [tools.md](tools.md) | 確認用ツール (`tools/`) の使い方: `ptx_tei_monitor` (長時間の受信を一定間隔で集計)、`ptx_chrdev_test` (1 回の受信の集計、TS の保存)、`px4card_test` (内蔵カードリーダーの試験)。選局のオプション、集計の仕様、終了コード |
