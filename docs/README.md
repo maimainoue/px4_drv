@@ -16,6 +16,7 @@
 | [siano_tuners.md](siano_tuners.md) | PX-S1UD V2.0 / PX-Q1UD (Siano RIO) の OS ごとの経路、ファームウェア、検証状況 |
 | [devices/torne.md](devices/torne.md) | Sony CECH-ZD1 J (torne) の制御、カード UART、OS ごとの利用、実機試験 |
 | [devices/dt295.md](devices/dt295.md) | PIXELA PIX-DT295 の仕組み (起動直後の機材、窓、機材内のポンプ、取り込みブロック)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験 |
+| [devices/xz.md](devices/xz.md) | I-O DATA GV-MVP/XZ2 の仕組み (起動直後の機材の識別、書き込みが 4 バイトまでのリンク、初期化の表、機材内のポンプ、カード)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験、前面の最小化が成立しなかった経緯 |
 
 ## 仕様
 

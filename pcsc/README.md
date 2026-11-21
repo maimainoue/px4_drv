@@ -272,7 +272,7 @@ PID と GUID の照合と、`Info.plist` の検査には Python 3 が必要で�
 - Windows 版と共有する T=1 の状態遷移の試験
 - IFD ハンドラーの関数から `LinuxCardDevice` までを実物で通し、open・close・ioctl のシステムコールだけを模擬する試験 (未挿入、電源、T=1 、抜去、複数のカードリーダーの区別、コマンドを知らない古いカーネルモジュールなど)
 - カーネル側の PID・GUID の表と Windows 版の INF の照合
-- `Info.plist` の検査 (1行に1つの書式、3つの配列の件数、内蔵カードリーダーを持つ torne、PIX-DT295 の登録)
+- `Info.plist` の検査 (1行に1つの書式、3つの配列の件数、内蔵カードリーダーを持つ torne、PIX-DT295、GV-MVP/XZ の登録)
 
 実際の pcscd と libpcsclite を使う統合試験は、ホストの pcscd へ接続しないよう、試験専用のコンテナの中で実行します。  
 USB デバイスとホストの PC/SC のソケットを渡さず、pcscd を起動していないコンテナの root で、次を実行します。
