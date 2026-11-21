@@ -17,6 +17,7 @@
 | [devices/torne.md](devices/torne.md) | Sony CECH-ZD1 J (torne) の制御、カード UART、OS ごとの利用、実機試験 |
 | [devices/dt295.md](devices/dt295.md) | PIXELA PIX-DT295 の仕組み (起動直後の機材、窓、機材内のポンプ、取り込みブロック)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験 |
 | [devices/xz.md](devices/xz.md) | I-O DATA GV-MVP/XZ2 の仕組み (起動直後の機材の識別、書き込みが 4 バイトまでのリンク、初期化の表、機材内のポンプ、カード)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験、前面の最小化が成立しなかった経緯 |
+| [devices/tbs5530.md](devices/tbs5530.md) | TurboSight TBS 5530 (ISDB-T) の構成 (FX2 のブリッジ、CXD6822 と内蔵チューナー)、ファームウェアの扱い、実機で分かった落とし穴 (`SET_INTERFACE`、FIFO の不整合)、実機試験 |
 
 ## 仕様
 
