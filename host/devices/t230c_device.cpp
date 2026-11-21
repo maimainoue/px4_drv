@@ -7,8 +7,8 @@
 #include <limits>
 #include <thread>
 
-#ifdef __APPLE__
-#include <mach-o/dyld.h>
+#if defined(__APPLE__) || defined(PX4_USERLAND)
+#include <exe_path.h>
 #endif
 
 #include "msg.h"
@@ -86,7 +86,7 @@ int T230CDevice::TransferOut(const std::uint8_t *data, std::size_t size,
 		? timeout_ms : control_timeout;
 	if (!timeout)
 		return -ETIMEDOUT;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 	int actual = 0;
 	int ret = libusb_bulk_transfer(usb_dev_.handle, 0x01, const_cast<unsigned char *>(data),
 		static_cast<int>(size), &actual, timeout);
@@ -115,7 +115,7 @@ int T230CDevice::TransferIn(std::uint8_t endpoint, std::uint8_t *data,
 	actual = 0;
 	if (!timeout)
 		return -ETIMEDOUT;
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 	int transferred = 0;
 	int ret = libusb_bulk_transfer(usb_dev_.handle, endpoint, data, static_cast<int>(size), &transferred, timeout);
 	actual = static_cast<std::size_t>(std::max(transferred, 0));
@@ -274,10 +274,9 @@ int T230CDevice::Init()
 	DWORD exe_len = GetModuleFileNameW(nullptr, exe_path, 32768);
 	if (exe_len && exe_len < 32768)
 		exe_dir = std::filesystem::path(exe_path).parent_path();
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(PX4_USERLAND)
 	char exe_path[4096];
-	uint32_t exe_len = sizeof(exe_path);
-	if (_NSGetExecutablePath(exe_path, &exe_len) == 0)
+	if (px4::GetExecutablePath(exe_path, sizeof(exe_path)))
 		exe_dir = std::filesystem::path(exe_path).parent_path();
 #endif
 	if (!exe_dir.empty()) {

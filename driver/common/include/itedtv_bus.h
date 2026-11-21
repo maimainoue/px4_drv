@@ -12,10 +12,10 @@
 #include <stdint.h>
 #endif
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/device.h>
 #include <linux/usb.h>
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(PX4_USERLAND)
 #include "misc_posix.h"
 #include "libusb_compat.h"
 #elif defined(_WIN32) || defined(_WIN64)

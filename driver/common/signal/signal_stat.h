@@ -19,9 +19,9 @@
 #ifndef __SIGNAL_STAT_H__
 #define __SIGNAL_STAT_H__
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/types.h>
-#elif defined(__APPLE__)
+#elif defined(__APPLE__) || defined(PX4_USERLAND)
 #include "misc_posix.h"
 #include <stdint.h>
 typedef uint64_t u64;

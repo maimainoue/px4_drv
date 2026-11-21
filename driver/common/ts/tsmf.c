@@ -10,7 +10,7 @@
 
 #include "tsmf.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/string.h>
 #elif defined(_WIN32) || defined(_WIN64)
 #include <string.h>

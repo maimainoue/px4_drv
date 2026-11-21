@@ -46,7 +46,7 @@
 #include <ctime>
 #include <cerrno>
 
-#include <mach-o/dyld.h>
+#include "exe_path.h"
 
 #include <unistd.h>
 #include <fcntl.h>
@@ -103,26 +103,14 @@ static int unix_connect(const char *path);
 
 static bool get_executable_dir(char *buf, std::size_t size)
 {
-	uint32_t path_size = 0;
-	_NSGetExecutablePath(nullptr, &path_size);
-	if (path_size == 0)
-		return false;
+	char path[PATH_MAX];
 
-	auto *path = static_cast<char *>(malloc(path_size));
-	if (!path)
+	if (!px4::GetExecutablePath(path, sizeof(path)))
 		return false;
-
-	if (_NSGetExecutablePath(path, &path_size) != 0) {
-		free(path);
-		return false;
-	}
 
 	char resolved[PATH_MAX];
-	if (!realpath(path, resolved)) {
-		free(path);
+	if (!realpath(path, resolved))
 		return false;
-	}
-	free(path);
 
 	char dirbuf[PATH_MAX];
 	strncpy(dirbuf, resolved, sizeof(dirbuf) - 1);

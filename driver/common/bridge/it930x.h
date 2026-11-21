@@ -8,10 +8,10 @@
 #ifndef __IT930X_H__
 #define __IT930X_H__
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/types.h>
 #include <linux/device.h>
-#elif defined(__APPLE__) || defined(_WIN32) || defined(_WIN64)
+#elif defined(__APPLE__) || defined(PX4_USERLAND) || defined(_WIN32) || defined(_WIN64)
 #include "misc_win.h"
 #endif
 

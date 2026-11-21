@@ -10,7 +10,7 @@
 #include "it930x.h"
 #include "px4_log_category.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/kernel.h>
 #include <linux/errno.h>
 #include <linux/slab.h>

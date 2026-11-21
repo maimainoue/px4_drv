@@ -32,7 +32,27 @@ endif()
 if(NOT LIBUSB_FOUND)
     message(FATAL_ERROR
         "libusb-1.0 not found.\n"
-        "Install it with:  brew install libusb")
+        "Install it with:  brew install libusb  (macOS) / apt install libusb-1.0-0-dev  (Linux)")
+endif()
+
+# ---------------------------------------------------------------------------
+# OS ごとのリンク指定。macOS は libusb が内部で使う IOKit と PC/SC のフレームワーク、
+# Linux (ユーザーランド版の確認用) は pcsc-lite を使う。
+# ---------------------------------------------------------------------------
+# 共有ソース (driver/common、host/) は、カーネル (__linux__ かつ PX4_USERLAND なし) と
+# libusb のユーザーランド (__APPLE__ または PX4_USERLAND) を、このマクロで見分ける。
+add_compile_definitions(PX4_USERLAND=1)
+
+if(APPLE)
+    set(PX4_PLATFORM_LIBS "-framework CoreFoundation" "-framework IOKit")
+    set(PX4_PCSC_LIBS "-framework PCSC")
+elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux")
+    set(PX4_PLATFORM_LIBS "")
+    pkg_check_modules(PCSCLITE REQUIRED libpcsclite)
+    set(PX4_PCSC_LIBS ${PCSCLITE_LIBRARIES})
+    include_directories(${PCSCLITE_INCLUDE_DIRS})
+else()
+    message(FATAL_ERROR "macos/CMakeLists.txt: 未対応の OS (${CMAKE_SYSTEM_NAME})")
 endif()
 
 # ---------------------------------------------------------------------------
@@ -198,8 +218,7 @@ target_link_libraries(DriverHost_PX4
 # macOS framework needed for IOKit (used internally by libusb)
 target_link_libraries(DriverHost_PX4
     PRIVATE
-    "-framework CoreFoundation"
-    "-framework IOKit"
+    ${PX4_PLATFORM_LIBS}
 )
 
 # ---------------------------------------------------------------------------
@@ -226,7 +245,7 @@ target_include_directories(px4rec PRIVATE
 )
 
 target_link_libraries(px4rec PRIVATE
-    "-framework PCSC"
+    ${PX4_PCSC_LIBS}
 )
 
 # ---------------------------------------------------------------------------
@@ -387,7 +406,7 @@ if(BUILD_TESTING)
     target_compile_definitions(device_parity_test PRIVATE PX4_REPO_ROOT="${REPO_ROOT}")
     target_link_directories(device_parity_test PRIVATE ${LIBUSB_LIBRARY_DIRS})
     target_link_libraries(device_parity_test PRIVATE ${LIBUSB_LIBRARIES}
-        "-framework CoreFoundation" "-framework IOKit")
+        ${PX4_PLATFORM_LIBS})
     add_test(NAME device_parity_test COMMAND device_parity_test)
 
     # PX4 系・PXMLT 系の共有ストリームが全転送を失った後の開始・停止・参照数を、
@@ -397,17 +416,21 @@ if(BUILD_TESTING)
         ${MACOS_C_SRCS} ${STREAM_TEST_MACOS_CXX_SRCS} ${SHARED_CXX_SRCS} ${DRIVER_C_SRCS})
     target_link_directories(shared_stream_failure_test PRIVATE ${LIBUSB_LIBRARY_DIRS})
     target_link_libraries(shared_stream_failure_test PRIVATE ${LIBUSB_LIBRARIES}
-        "-framework CoreFoundation" "-framework IOKit")
+        ${PX4_PLATFORM_LIBS})
     add_test(NAME shared_stream_failure_test COMMAND shared_stream_failure_test)
 
     # libusbの失敗・cancel完了を模擬し、実際のmacOS転送層を検証する。
-    add_executable(itedtv_usb_failure_test
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_usb_failure_test.c"
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_bus_libusb_test_wrapper.c"
-        "${HOST_SRC}/core/usb_history.cpp"
-        "${HOST_SRC}/common/msg_log.c"
-        "${MACOS_SRC}/common/msg.c")
-    add_test(NAME itedtv_usb_failure_test COMMAND itedtv_usb_failure_test)
+    # macOS 専用の API (<malloc/malloc.h> の malloc_size) を使うため、Linux では登録しない。
+    if(APPLE)
+        add_executable(itedtv_usb_failure_test
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_usb_failure_test.c"
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/itedtv_bus_libusb_test_wrapper.c"
+            "${HOST_SRC}/core/usb_history.cpp"
+            "${HOST_SRC}/common/msg_log.c"
+            "${MACOS_SRC}/common/msg.c")
+        add_test(NAME itedtv_usb_failure_test COMMAND itedtv_usb_failure_test)
+        set_tests_properties(itedtv_usb_failure_test PROPERTIES TIMEOUT 10)
+    endif()
 
     # 作った TS で、TSMF の TS 番号による選択・ヘッダーのない搬送波の素通し・分割 TLV の判定を確認する。
     add_executable(tsmf_filter_test
@@ -456,7 +479,7 @@ if(BUILD_TESTING)
         "${B25_SRC}/arib_std_b25.c" "${B25_SRC}/b_cas_card.c"
         "${B25_SRC}/multi2.c" "${B25_SRC}/ts_section_parser.c")
     target_include_directories(px4rec_failure_test PRIVATE "${B25_SRC}")
-    target_link_libraries(px4rec_failure_test PRIVATE "-framework PCSC")
+    target_link_libraries(px4rec_failure_test PRIVATE ${PX4_PCSC_LIBS})
     add_test(NAME px4rec_failure_test COMMAND px4rec_failure_test)
     add_executable(chset_loader_test "${CMAKE_CURRENT_SOURCE_DIR}/tests/chset_loader_test.cpp"
         "${MACOS_SRC}/common/util.cpp")
@@ -486,25 +509,28 @@ if(BUILD_TESTING)
     add_test(NAME stream_buffer_test COMMAND stream_buffer_test)
 
     # StreamBuffer の異常通知が data pipe の client にEOFを返すことを実接続で検証する。
-    add_executable(stream_server_failure_test
-        "${CMAKE_CURRENT_SOURCE_DIR}/tests/stream_server_failure_test.cpp"
-        "${MACOS_SRC}/common/pipe.cpp"
-        "${HOST_SRC}/common/msg_log.c"
-        "${MACOS_SRC}/common/msg.c"
-        "${MACOS_SRC}/DriverHost_PX4/misc_posix.c"
-        "${MACOS_SRC}/DriverHost_PX4/pipe_server.cpp"
-        "${HOST_SRC}/core/stream_server.cpp"
-        "${HOST_SRC}/core/server_base.cpp"
-        "${HOST_SRC}/core/receiver_base.cpp"
-        "${DRIVER_DIR}/common/ts/tsmf.c"
-        "${HOST_SRC}/core/ts_stats.cpp"
-        "${HOST_SRC}/core/receiver_manager.cpp"
-        "${HOST_SRC}/core/ringbuffer.cpp")
-    target_compile_definitions(stream_server_failure_test PRIVATE _DEFAULT_SOURCE)
-    add_test(NAME stream_server_failure_test COMMAND stream_server_failure_test)
-    set_tests_properties(stream_server_failure_test PROPERTIES TIMEOUT 10)
+    # macOS 専用のソケットオプション (SO_NOSIGPIPE) を使うため、Linux では登録しない。
+    if(APPLE)
+        add_executable(stream_server_failure_test
+            "${CMAKE_CURRENT_SOURCE_DIR}/tests/stream_server_failure_test.cpp"
+            "${MACOS_SRC}/common/pipe.cpp"
+            "${HOST_SRC}/common/msg_log.c"
+            "${MACOS_SRC}/common/msg.c"
+            "${MACOS_SRC}/DriverHost_PX4/misc_posix.c"
+            "${MACOS_SRC}/DriverHost_PX4/pipe_server.cpp"
+            "${HOST_SRC}/core/stream_server.cpp"
+            "${HOST_SRC}/core/server_base.cpp"
+            "${HOST_SRC}/core/receiver_base.cpp"
+            "${DRIVER_DIR}/common/ts/tsmf.c"
+            "${HOST_SRC}/core/ts_stats.cpp"
+            "${HOST_SRC}/core/receiver_manager.cpp"
+            "${HOST_SRC}/core/ringbuffer.cpp")
+        target_compile_definitions(stream_server_failure_test PRIVATE _DEFAULT_SOURCE)
+        add_test(NAME stream_server_failure_test COMMAND stream_server_failure_test)
+        set_tests_properties(stream_server_failure_test PROPERTIES TIMEOUT 10)
+    endif()
 
-    set_tests_properties(itedtv_usb_failure_test j83b_driver_test chset_loader_test stream_buffer_test PROPERTIES TIMEOUT 10)
+    set_tests_properties(j83b_driver_test chset_loader_test stream_buffer_test PROPERTIES TIMEOUT 10)
     # 異常と開始要求の同時実行を繰り返すため、Sanitizer ビルドでも収まる上限にする。
     set_tests_properties(shared_stream_failure_test PROPERTIES TIMEOUT 60)
     # 指定時間の正常終了を複数回試すため、他の短時間テストとは別にする。

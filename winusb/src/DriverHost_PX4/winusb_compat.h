@@ -2,7 +2,7 @@
 
 #pragma once
 
-#ifdef __APPLE__
+#if defined(__APPLE__) || defined(PX4_USERLAND)
 #include "libusb_compat.h"
 #else
 

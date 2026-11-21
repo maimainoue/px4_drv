@@ -11,7 +11,7 @@
 
 #include "signal_stat.h"
 
-#ifdef __linux__
+#if defined(__linux__) && !defined(PX4_USERLAND)
 #include <linux/errno.h>
 #include <linux/math64.h>
 #define SIG_DIV_S64(n, d)	div_s64((n), (d))

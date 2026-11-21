@@ -11,7 +11,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | `driver/linux/` | USB 登録、カーネル内受信スレッド、chardev、ioctl、Linux の電源・寿命管理 | Linux |
 | `host/common/`, `host/core/`, `host/devices/` | 共通の C++ デバイス、受信機、制御・配信サーバー | WinUSB / macOS |
 | `winusb/` | WinUSB 転送、BonDriver、WinSCard、INF、Windows ビルドと配布 | Windows |
-| `macos/` | libusb / POSIX 転送、Unix socket、`px4rec`、macOS ビルド | macOS |
+| `macos/` | libusb / POSIX 転送、Unix socket、`px4rec`、macOS ビルド (Linux でも、ユーザーランド版の確認用にビルドできる。[別紙](docs/20261119_linux_userland_host.md)) | macOS |
 | `fwtool/`, `tools/` | ファームウェア補助、診断・TS 解析ツール | ツールごとに異なる |
 | `tests/`, `winusb/tests/`, `macos/tests/` | 共通プロトコル、状態遷移、OS 別ビルドの自動試験 | 対象ごとに異なる |
 | `docs/` | 検証記録、機種別の手順、設計計画 | 全 OS |
@@ -789,6 +789,8 @@ macOS 版は、ユーザー空間デーモン `DriverHost_PX4` として動作�
 	$ cmake --build macos/build
 
 以降のコマンドは、すべてリポジトリのルート (`px4_drv/`) で実行します。
+
+Linux でも、カーネルモジュールを使わずに、同じユーザーランド版 (`libusb` 経由) を、確認用にビルドして動かせます (`libusb-1.0-0-dev` と `libpcsclite-dev` が必要)。常用する構成ではありません。手順と確認範囲は [Linux のユーザーランド版の確認](docs/20261119_linux_userland_host.md) を参照してください。
 
 ビルドが成功すると `macos/build/` に次のファイルが生成されます。
 
