@@ -23,18 +23,21 @@
 	<key>ifdVendorID</key>
 	<array>
 		<string>0x054c</string>
+		<string>0x04bb</string>
 		<string>0x06b8</string>
 		<string>0x06b8</string>
 	</array>
 	<key>ifdProductID</key>
 	<array>
 		<string>0x04b2</string>
+		<string>0x0530</string>
 		<string>0x103b</string>
 		<string>0x105c</string>
 	</array>
 	<key>ifdFriendlyName</key>
 	<array>
 		<string>Sony CECH-ZD1 J Smart Card Reader</string>
+		<string>I-O DATA GV-MVP/XZ Smart Card Reader</string>
 		<string>PIXELA PIX-DT295 Rev.01 Smart Card Reader</string>
 		<string>PIXELA PIX-DT295 Rev.02 Smart Card Reader</string>
 	</array>

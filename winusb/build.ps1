@@ -106,6 +106,24 @@ foreach ($build_platform in $build_platforms) {
         throw "torne core test failed. platform: $build_platform"
     }
 
+    # GV-MVP/XZ common layer (mock device) and card UART layer.
+    msbuild tests/xz_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "XZ core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/xz_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "XZ core test failed. platform: $build_platform"
+    }
+    msbuild tests/xz_card_uart_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "XZ card UART test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/xz_card_uart_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "XZ card UART test failed. platform: $build_platform"
+    }
+
     # PIX-DT295 common layer (mock device) and card UART layer.
     msbuild tests/dt295_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
@@ -170,6 +188,8 @@ New-Item -ItemType Directory dist/BonDriver_T230C_32bit
 New-Item -ItemType Directory dist/BonDriver_T230C_64bit
 New-Item -ItemType Directory dist/BonDriver_Torne_32bit
 New-Item -ItemType Directory dist/BonDriver_Torne_64bit
+New-Item -ItemType Directory dist/BonDriver_XZ_32bit
+New-Item -ItemType Directory dist/BonDriver_XZ_64bit
 New-Item -ItemType Directory dist/BonDriver_DT295_32bit
 New-Item -ItemType Directory dist/BonDriver_DT295_64bit
 
@@ -374,6 +394,18 @@ Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_Torne_64bit
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_Torne_64bit/DriverHost_PX4.ini
 
 
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_XZ.ini dist/BonDriver_XZ_32bit/BonDriver_XZ.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_XZ-T.ChSet.txt dist/BonDriver_XZ_32bit/BonDriver_XZ-T.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_XZ_32bit/BonDriver_XZ.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_XZ_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_XZ_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_XZ.ini dist/BonDriver_XZ_64bit/BonDriver_XZ.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_XZ-T.ChSet.txt dist/BonDriver_XZ_64bit/BonDriver_XZ-T.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_XZ_64bit/BonDriver_XZ.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_XZ_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_XZ_64bit/DriverHost_PX4.ini
 
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295.ini dist/BonDriver_DT295_32bit/BonDriver_DT295.ini
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_32bit/BonDriver_DT295-T.ChSet.txt

@@ -11,6 +11,7 @@
 #include "t230c_device.hpp"
 #include "siano_device.hpp"
 #include "torne_device.hpp"
+#include "xz_device.hpp"
 #include "dt295_device.hpp"
 
 namespace px4 {
@@ -30,6 +31,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::T230C, L"T230C" },
 	{ DeviceType::SIANO, L"SIANO" },
 	{ DeviceType::TORNE, L"TORNE" },
+	{ DeviceType::XZ, L"XZ" },
 	{ DeviceType::DT295, L"DT295" },
 };
 
@@ -86,6 +88,9 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 		return Make<SianoDevice>(path, definition, index, receiver_manager);
 	case DeviceType::TORNE:
 		return Make<TorneDevice>(path, definition, index, receiver_manager);
+	case DeviceType::XZ:
+		/* 地上波 1 受信機と内蔵カード。mAgicVISION ファームウェアを使わず、起動直後の機材だけが対象。 */
+		return Make<XzDevice>(path, definition, index, receiver_manager);
 	case DeviceType::DT295:
 		/* Rev.01 と Rev.02 は USB ID だけが違い、同じクラスを使う。起動直後の機材だけが対象。 */
 		return Make<Dt295Device>(path, definition, index, receiver_manager);

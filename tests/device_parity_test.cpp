@@ -221,6 +221,51 @@ int main()
 		ok = false;
 	}
 	/*
+	 * GV-MVP/XZ: 地上波 1 受信機。macOS の機種定義が VID/PID を持ち、WinUSB の INF が同じ DeviceInterfaceGUID と
+	 * ハードウェア ID を持つこと。
+	 */
+	for (const auto &[os_name, devices] : {
+		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+		bool found_xz = false;
+		for (const auto &d : *devices) {
+			if (d.type != "XZ")
+				continue;
+			found_xz = true;
+			if (d.systems != std::set<std::string>{"ISDB-T"}) {
+				std::fprintf(stderr, "%s XZ must expose one ISDB-T receiver\n", os_name);
+				ok = false;
+			}
+			if (d.vid != 0x04bb || d.pid != 0x0530) {
+				std::fprintf(stderr, "%s XZ has %04x:%04x, expected 04bb:0530\n", os_name, d.vid, d.pid);
+				ok = false;
+			}
+			if (d.interface_guid.empty()) {
+				std::fprintf(stderr, "%s XZ lacks DeviceInterfaceGUID\n", os_name);
+				ok = false;
+			}
+		}
+		if (!found_xz) {
+			std::fprintf(stderr, "%s INI lacks XZ 04bb:0530\n", os_name);
+			ok = false;
+		}
+	}
+	if (px4::ParseDeviceType(L"XZ") == px4::DeviceType::UNKNOWN) {
+		std::fprintf(stderr, "device factory does not know Type=XZ\n");
+		ok = false;
+	}
+	std::string xz_interface_guid;
+	for (const auto &d : win)
+		if (d.type == "XZ")
+			xz_interface_guid = d.interface_guid;
+	std::ifstream xz_inf(root + "/winusb/pkg/inf/GV-MVP-XZ.inf", std::ios::binary);
+	const std::string xz_inf_text((std::istreambuf_iterator<char>(xz_inf)), std::istreambuf_iterator<char>());
+	if (xz_interface_guid.empty() || xz_inf_text.find("USB\\VID_04BB&PID_0530") == std::string::npos ||
+	    xz_inf_text.find(xz_interface_guid) == std::string::npos) {
+		std::fprintf(stderr, "GV-MVP-XZ.inf does not match the WinUSB device definition\n");
+		ok = false;
+	}
+	/*
 	 * PIX-DT295: Rev.01 (06b8:103b) と Rev.02 (06b8:105c)。それぞれ別の DeviceInterfaceGUID を持ち、
 	 * WinUSB の INF が同じ GUID とハードウェア ID を持つこと。
 	 */
@@ -312,6 +357,11 @@ int main()
 	}
 	if (!linux_ids.count({0x054c, 0x04b2})) {
 		std::fprintf(stderr, "Linux lacks TORNE 054c:04b2\n");
+		ok = false;
+	}
+	if (!linux_ids.count({0x04bb, 0x0530})) {
+		std::fprintf(stderr, "Linux lacks XZ 04bb:0530
+");
 		ok = false;
 	}
 	for (const auto &d : mac_set) {

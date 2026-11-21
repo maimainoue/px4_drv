@@ -40,6 +40,9 @@
 #define USB_PID_PIX_DT295_REV01 0x103b
 #define USB_PID_PIX_DT295_REV02 0x105c
 
+#define USB_VID_IODATA 0x04bb
+#define USB_PID_IODATA_GV_MVP_XZ 0x0530
+
 
 enum px4_usb_device_type {
 	UNKNOWN_USB_DEVICE = 0,
@@ -55,6 +58,7 @@ enum px4_usb_device_type {
 	SIANO_USB_DEVICE,
 	TORNE_USB_DEVICE,
 	DT295_USB_DEVICE,
+	XZ_USB_DEVICE,
 	//----
 	MAX_USB_DEVICE_TYPE,
 };
