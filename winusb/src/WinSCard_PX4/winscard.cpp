@@ -1364,6 +1364,8 @@ LONG WINAPI SCardGetAttrib(SCARDHANDLE card_handle, DWORD attribute,
 			append_ansi("PLEX");
 		else if (card->reader.compare(0, 9, L"Digibest ") == 0)
 			append_ansi("Digibest");
+		else if (card->reader.compare(0, 9, L"I-O DATA ") == 0)
+			append_ansi("I-O DATA");
 		else if (card->reader.compare(0, 7, L"PIXELA ") == 0)
 			append_ansi("PIXELA");
 		else

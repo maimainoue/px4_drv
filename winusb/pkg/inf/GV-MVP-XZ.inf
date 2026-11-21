@@ -1,0 +1,36 @@
+; I-O DATA GV-MVP/XZ (04BB:0530)
+[Version]
+Signature="$Windows NT$"
+Class=Media
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%AuthorName%
+DriverVer=11/08/2026,26.11.08.00
+CatalogFile=px4_drv_winusb.cat
+
+[Manufacturer]
+%AuthorName%=XZ_WinUSB,ntx86,ntamd64,ntarm64
+
+[XZ_WinUSB.ntx86]
+%XZ_WinUSB.DeviceDesc%=XZ_WinUSB.DeviceInstall,USB\VID_04BB&PID_0530
+[XZ_WinUSB.ntamd64]
+%XZ_WinUSB.DeviceDesc%=XZ_WinUSB.DeviceInstall,USB\VID_04BB&PID_0530
+[XZ_WinUSB.ntarm64]
+%XZ_WinUSB.DeviceDesc%=XZ_WinUSB.DeviceInstall,USB\VID_04BB&PID_0530
+
+[XZ_WinUSB.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=XZ_WinUSB.DeviceSetup.AddProperty
+[XZ_WinUSB.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[XZ_WinUSB.DeviceInstall.HW]
+AddReg=XZ_WinUSB.DeviceSetup.AddReg
+[XZ_WinUSB.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{EFD1A173-B5DA-4BBC-8AC1-B2318799EC9E}"
+[XZ_WinUSB.DeviceSetup.AddProperty]
+{afd97640-86a3-4210-b67c-289c41aabe55},3,0x00000011,,0
+
+[Strings]
+AuthorName="px4_drv contributors"
+XZ_WinUSB.DeviceDesc="I-O DATA GV-MVP/XZ ISDB-T Receiver (WinUSB)"

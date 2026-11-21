@@ -64,6 +64,7 @@ include_directories(
     "${DRIVER_DIR}/common/ts"
     "${DRIVER_DIR}/common/signal"
     "${DRIVER_DIR}/common/torne"
+    "${DRIVER_DIR}/common/xz"
     "${DRIVER_DIR}/common/dt295"
     "${LIBUSB_INCLUDE_DIRS}"
 )
@@ -129,6 +130,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/siano_protocol.cpp"
     "${HOST_SRC}/devices/siano_wire.cpp"
     "${HOST_SRC}/devices/torne_device.cpp"
+    "${HOST_SRC}/devices/xz_device.cpp"
     "${HOST_SRC}/devices/dt295_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
@@ -152,6 +154,11 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/torne/torne_bridge.c"
     "${DRIVER_DIR}/common/torne/torne_dib.c"
     "${DRIVER_DIR}/common/torne/torne_card.c"
+    "${DRIVER_DIR}/common/xz/xz_link.c"
+    "${DRIVER_DIR}/common/xz/xz_board.c"
+    "${DRIVER_DIR}/common/xz/xz_frontend.c"
+    "${DRIVER_DIR}/common/xz/xz_program.c"
+    "${DRIVER_DIR}/common/xz/xz_card.c"
     "${DRIVER_DIR}/common/dt295/dt295_link.c"
     "${DRIVER_DIR}/common/dt295/dt295_board.c"
     "${DRIVER_DIR}/common/dt295/dt295_frontend.c"
@@ -316,6 +323,34 @@ if(BUILD_TESTING)
         "${REPO_ROOT}/tests/torne_card_uart_test.c"
         "${DRIVER_DIR}/common/torne/torne_card.c")
     add_test(NAME torne_card_uart_test COMMAND torne_card_uart_test)
+
+    # GV-MVP/XZ の共通層 (模擬機材) とカード UART 層の自動試験。xz_core.h の C++ からの利用 (extern "C") も確かめる。
+    add_executable(xz_core_test
+        "${REPO_ROOT}/tests/xz_core_test.c"
+        "${DRIVER_DIR}/common/xz/xz_link.c"
+        "${DRIVER_DIR}/common/xz/xz_board.c"
+        "${DRIVER_DIR}/common/xz/xz_frontend.c"
+        "${DRIVER_DIR}/common/xz/xz_program.c")
+    target_include_directories(xz_core_test PRIVATE "${DRIVER_DIR}/common/xz")
+    add_test(NAME xz_core_test COMMAND xz_core_test)
+
+    add_executable(xz_core_cpp_link_test
+        "${REPO_ROOT}/tests/xz_core_cpp_link_test.cpp"
+        "${DRIVER_DIR}/common/xz/xz_link.c"
+        "${DRIVER_DIR}/common/xz/xz_board.c"
+        "${DRIVER_DIR}/common/xz/xz_frontend.c"
+        "${DRIVER_DIR}/common/xz/xz_program.c"
+        "${DRIVER_DIR}/common/xz/xz_card.c"
+        "${DRIVER_DIR}/common/torne/torne_card.c")
+    target_include_directories(xz_core_cpp_link_test PRIVATE "${DRIVER_DIR}/common/xz" "${DRIVER_DIR}/common/torne")
+    add_test(NAME xz_core_cpp_link_test COMMAND xz_core_cpp_link_test)
+
+    add_executable(xz_card_uart_test
+        "${REPO_ROOT}/tests/xz_card_uart_test.c"
+        "${DRIVER_DIR}/common/xz/xz_card.c"
+        "${DRIVER_DIR}/common/torne/torne_card.c")
+    target_include_directories(xz_card_uart_test PRIVATE "${DRIVER_DIR}/common/xz" "${DRIVER_DIR}/common/torne")
+    add_test(NAME xz_card_uart_test COMMAND xz_card_uart_test)
 
     # PIX-DT295 の共通層 (模擬機材) とカード UART 層の自動試験。
     add_executable(dt295_core_test

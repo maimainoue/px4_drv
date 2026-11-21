@@ -28,6 +28,7 @@ required = {
     'Sony CECH-ZD1 J': ('USB_VID_SONY', 'USB_PID_TORNE'),
     'PIX-DT295 Rev.01': ('USB_VID_PIXELA', 'USB_PID_PIX_DT295_REV01'),
     'PIX-DT295 Rev.02': ('USB_VID_PIXELA', 'USB_PID_PIX_DT295_REV02'),
+    'GV-MVP/XZ': ('USB_VID_IODATA', 'USB_PID_IODATA_GV_MVP_XZ'),
 }
 for model, (vendor_name, product_name) in required.items():
     pair = (define[vendor_name], define[product_name])

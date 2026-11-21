@@ -25,6 +25,7 @@ enum class DeviceType : std::uint32_t {
 	T230C,
 	SIANO,
 	TORNE,
+	XZ,
 	DT295,
 };
 
