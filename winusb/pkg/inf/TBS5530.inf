@@ -1,0 +1,36 @@
+; TurboSight TBS 5530 (734C:5530)
+[Version]
+Signature="$Windows NT$"
+Class=Media
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%AuthorName%
+DriverVer=11/15/2026,26.11.15.00
+CatalogFile=px4_drv_winusb.cat
+
+[Manufacturer]
+%AuthorName%=TBS5530_WinUSB,ntx86,ntamd64,ntarm64
+
+[TBS5530_WinUSB.ntx86]
+%TBS5530_WinUSB.DeviceDesc%=TBS5530_WinUSB.DeviceInstall,USB\VID_734C&PID_5530
+[TBS5530_WinUSB.ntamd64]
+%TBS5530_WinUSB.DeviceDesc%=TBS5530_WinUSB.DeviceInstall,USB\VID_734C&PID_5530
+[TBS5530_WinUSB.ntarm64]
+%TBS5530_WinUSB.DeviceDesc%=TBS5530_WinUSB.DeviceInstall,USB\VID_734C&PID_5530
+
+[TBS5530_WinUSB.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=TBS5530_WinUSB.DeviceSetup.AddProperty
+[TBS5530_WinUSB.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[TBS5530_WinUSB.DeviceInstall.HW]
+AddReg=TBS5530_WinUSB.DeviceSetup.AddReg
+[TBS5530_WinUSB.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{7A1D4E96-2B38-4C5F-8F61-0D9A3E7B5C42}"
+[TBS5530_WinUSB.DeviceSetup.AddProperty]
+{afd97640-86a3-4210-b67c-289c41aabe55},3,0x00000011,,0
+
+[Strings]
+AuthorName="px4_drv contributors"
+TBS5530_WinUSB.DeviceDesc="TurboSight TBS 5530 ISDB-T Receiver (WinUSB)"

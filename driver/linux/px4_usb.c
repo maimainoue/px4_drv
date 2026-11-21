@@ -32,6 +32,7 @@
 #include "torne_device.h"
 #include "dt295_device.h"
 #include "xz_device.h"
+#include "tbs5530_device.h"
 
 /*
  * fallthrough は Linux 5.4 で追加されたため、それより古いカーネルでは 5.4 と同じ定義を置く
@@ -103,6 +104,11 @@
 #endif
 #define XZ_USB_MAX_CHRDEV	(XZ_USB_MAX_DEVICE * XZ_CHRDEV_NUM)
 
+#ifndef TBS5530_USB_MAX_DEVICE
+#define TBS5530_USB_MAX_DEVICE	16
+#endif
+#define TBS5530_USB_MAX_CHRDEV	(TBS5530_USB_MAX_DEVICE * TBS5530_CHRDEV_NUM)
+
 
 struct px4_usb_context {
 	enum px4_usb_device_type type;
@@ -119,6 +125,7 @@ struct px4_usb_context {
 		struct torne_device torne;
 		struct dt295_device dt295;
 		struct xz_device xz;
+		struct tbs5530_device tbs5530;
 	} ctx;
 };
 
@@ -410,6 +417,18 @@ static int px4_usb_probe(struct usb_interface *intf,
 				     &ctx->quit_completion);
 		break;
 
+	case USB_VID_TBS:
+		if (id->idProduct != USB_PID_TBS_5530) {
+			ret = -EINVAL;
+			break;
+		}
+
+		ctx->type = TBS5530_USB_DEVICE;
+		ret = tbs5530_device_init(&ctx->ctx.tbs5530, dev, intf,
+					  px4_usb_chrdev_ctx[TBS5530_USB_DEVICE],
+					  &ctx->quit_completion);
+		break;
+
 	default:
 		ret = -EINVAL;
 		break;
@@ -497,6 +516,11 @@ static void px4_usb_disconnect(struct usb_interface *intf)
 		wait_for_completion(&ctx->quit_completion);
 		break;
 
+	case TBS5530_USB_DEVICE:
+		tbs5530_device_term(&ctx->ctx.tbs5530);
+		wait_for_completion(&ctx->quit_completion);
+		break;
+
 	default:
 		/* unknown device */
 		break;
@@ -546,6 +570,7 @@ static const struct usb_device_id px4_usb_ids[] = {
 	{ USB_DEVICE(USB_VID_PIXELA, USB_PID_PIX_DT295_REV01) },
 	{ USB_DEVICE(USB_VID_PIXELA, USB_PID_PIX_DT295_REV02) },
 	{ USB_DEVICE(USB_VID_IODATA, USB_PID_IODATA_GV_MVP_XZ) },
+	{ USB_DEVICE(USB_VID_TBS, USB_PID_TBS_5530) },
 	{ 0 }
 };
 
@@ -663,6 +688,14 @@ int px4_usb_register(void)
 		goto fail_xz;
 	}
 
+	ret = ptx_chrdev_context_create("tbs5530", "tbs5530video",
+					TBS5530_USB_MAX_CHRDEV,
+					&px4_usb_chrdev_ctx[TBS5530_USB_DEVICE]);
+	if (ret) {
+		pr_err("px4_usb_register: ptx_chrdev_context_create(\"tbs5530\") failed.\n");
+		goto fail_tbs5530;
+	}
+
 	ret = usb_register(&px4_usb_driver);
 	if (ret) {
 		pr_err("px4_usb_register: usb_register() failed.\n");
@@ -672,6 +705,9 @@ int px4_usb_register(void)
 	return 0;
 
 fail_usb:
+	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[TBS5530_USB_DEVICE]);
+
+fail_tbs5530:
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[XZ_USB_DEVICE]);
 
 fail_xz:
@@ -711,6 +747,7 @@ fail:
 void px4_usb_unregister(void)
 {
 	usb_deregister(&px4_usb_driver);
+	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[TBS5530_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[XZ_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[DT295_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[TORNE_USB_DEVICE]);

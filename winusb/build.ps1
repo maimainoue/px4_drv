@@ -142,6 +142,16 @@ foreach ($build_platform in $build_platforms) {
         throw "DT295 card UART test failed. platform: $build_platform"
     }
 
+    # TBS 5530 common layer (mock device).
+    msbuild tests/tbs5530_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "TBS 5530 core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/tbs5530_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "TBS 5530 core test failed. platform: $build_platform"
+    }
+
     # Shared diagnostics, TS continuity, USB history, and fixed-point C/N conversion.
     msbuild tests/diagnostics_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
@@ -192,6 +202,8 @@ New-Item -ItemType Directory dist/BonDriver_XZ_32bit
 New-Item -ItemType Directory dist/BonDriver_XZ_64bit
 New-Item -ItemType Directory dist/BonDriver_DT295_32bit
 New-Item -ItemType Directory dist/BonDriver_DT295_64bit
+New-Item -ItemType Directory dist/BonDriver_TBS5530_32bit
+New-Item -ItemType Directory dist/BonDriver_TBS5530_64bit
 
 # BonDriver_PX4_32bit のファイルをコピー
 Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_PX4_32bit/BonDriver_PX4-T.dll
@@ -419,10 +431,25 @@ Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_DT295_64bit/
 Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_DT295_64bit/DriverHost_PX4.exe
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DT295_64bit/DriverHost_PX4.ini
 
+# TBS 5530 のファームウェア (dvb-usb-id5530.fw) は配布物に含めない。利用者が DriverHost_PX4.exe と同じフォルダへ置く
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530.ini dist/BonDriver_TBS5530_32bit/BonDriver_TBS5530.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530-T.ChSet.txt dist/BonDriver_TBS5530_32bit/BonDriver_TBS5530-T.ChSet.txt
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530-C.ChSet.txt dist/BonDriver_TBS5530_32bit/BonDriver_TBS5530-C.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_TBS5530_32bit/BonDriver_TBS5530.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_TBS5530_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_TBS5530_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530.ini dist/BonDriver_TBS5530_64bit/BonDriver_TBS5530.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530-T.ChSet.txt dist/BonDriver_TBS5530_64bit/BonDriver_TBS5530-T.ChSet.txt
+Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530-C.ChSet.txt dist/BonDriver_TBS5530_64bit/BonDriver_TBS5530-C.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_TBS5530_64bit/BonDriver_TBS5530.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_TBS5530_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_TBS5530_64bit/DriverHost_PX4.ini
+
 # 各 BonDriver と同じビット数の WinSCard.dll を配置
-# WinUSB 版の全対応機種で内蔵カードリーダーを利用できる
+# WinUSB 版は、内蔵カードリーダーを持たない PX-S1UD、PX-Q1UD、TBS 5530 を除く全対応機種で、内蔵カードリーダーを利用できる
 Get-ChildItem dist/ -Directory -Filter 'BonDriver_*' |
-    Where-Object { $_.Name -notmatch 'PX-(S1UD|Q1UD)_' } | ForEach-Object {
+    Where-Object { $_.Name -notmatch 'PX-(S1UD|Q1UD)_|TBS5530_' } | ForEach-Object {
     $win_scard_platform = if ($_.Name.EndsWith('_32bit')) { 'x86' } else { 'x64' }
     Copy-Item "build/$win_scard_platform/Release-static/WinSCard.dll" $_.FullName
 }

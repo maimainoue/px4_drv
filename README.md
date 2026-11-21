@@ -33,6 +33,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | Sony CECH-ZD1 J (`054c:04b2`) | △ | △ | △ | ISDB-T 1基。macOS で30分受信、カード、復号を確認済み。Windows / Linux の実機は未確認。Linux は `/dev/tornevideo*` |
 | PIXELA PIX-DT295 (`06b8:103b` / `06b8:105c`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (2 台の同時受信とカード)、macOS 11 の Intel Mac (2 台の同時受信と B-CAS の復号) まで。macOS では、スリープからの復帰後に選局に失敗し、`DriverHost_PX4` の再起動が必要になる。BS/CS は対象外。詳細は [DT295 の別紙](docs/devices/dt295.md) |
 | I-O DATA GV-MVP/XZ (`04bb:0530`。実機確認は XZ2 の 1 台) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (10 分の受信とカード)、macOS 11 の Intel Mac (11 分の受信と B-CAS の復号、抜去) まで。BS/CS は対象外。XZ と XZ3 の機材は未確認。詳細は [XZ の別紙](docs/devices/xz.md) |
+| TurboSight TBS 5530 (`734c:5530`) | △ | △ | △ | ISDB-T 1基 (実験的)。ISDB-C (CATV。J.83 Annex C、64QAM) も受信でき、Linux と macOS の実機で確認済み。Windows は実装のみで未確認 (Windows と macOS は `ExperimentalISDBC` で有効にする)。BS/CS (ISDB-S) は衛星側の M88RS6060 が DVB-S/S2 専用のため受信できない。ファームウェア `dvb-usb-id5530.fw` は利用者が用意する (毎回の接続で送る)。実機確認は Linux 6.12 (仮想マシンへのパススルーと実機のホスト)、macOS 11 の Intel Mac (DriverHost_PX4 で 60 秒の受信)、Windows 11 (BonDriver 経由の受信、10 分) まで。連続性エラーが出る (仮想マシンのパススルー経由は 10 秒あたり数十回。実機のホストでは、この環境で 5 秒に 1,700 回ほどの飛び) が、原因は未確認。カードリーダーを持たないため B-CAS は対象外。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
 PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の受信経路を実機で確認しています。確認範囲と未確認の条件は、[DT295 の別紙](docs/devices/dt295.md) と [XZ の別紙](docs/devices/xz.md) に記載しています。
@@ -45,6 +46,7 @@ PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の
 - [Sony CECH-ZD1 J (torne)](docs/devices/torne.md)
 - [PIXELA PIX-DT295](docs/devices/dt295.md)
 - [I-O DATA GV-MVP/XZ](docs/devices/xz.md)
+- [TurboSight TBS 5530](docs/devices/tbs5530.md)
 
 設計記録、検証記録、カードリーダーの実装経緯を含む全文書の一覧は [docs/README.md](docs/README.md) にあります。
 
@@ -244,6 +246,10 @@ python3 tools/tune_latency.py --json DriverHost_PX4.log
 
 	- GV-MVP/XZ (ISDB-T と内蔵カードのみ・実験的。Linux、Windows、macOS (Intel Mac) で確認済み。実機確認は GV-MVP/XZ2 の 1 台。詳細は [XZ の別紙](docs/devices/xz.md))
 
+- TurboSight
+
+	- TBS 5530 (ISDB-T、ISDB-C・実験的。ファームウェア `dvb-usb-id5530.fw` は利用者が用意。Linux、Windows、macOS (Intel Mac) で受信を確認済み。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md))
+
 - e-Better
 
 	- DTV02-1T1S-U (実験的)
@@ -318,6 +324,7 @@ certutil.exe -addstore TrustedPublisher ".\px4_drv_winusb.cer"
 - Sony CECH-ZD1 J: `BonDriver_Torne` (実験的、ISDB-T のみ)
 - PIXELA PIX-DT295 (Rev.01、Rev.02): `BonDriver_DT295` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
 - I-O DATA GV-MVP/XZ: `BonDriver_XZ` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
+- TurboSight TBS 5530: `BonDriver_TBS5530` (実験的、ISDB-T。ISDB-C は `BonDriver_TBS5530.ini` と `DriverHost_PX4.ini` の設定を変えると受信できる (Windows は実機未確認)。ファームウェア `dvb-usb-id5530.fw` を `DriverHost_PX4.exe` と同じフォルダへ置く)
 
 お使いの PC に合うビット数のフォルダの中のファイルを**すべて**選択し、TVTest や EDCB などのソフトウェアが指定する BonDriver の配置フォルダにコピーします。  
 BonDriver と同じフォルダに DriverHost_PX4.exe / DriverHost_PX4.ini / it930x-firmware.bin があることを確認してください。Siano RIO のパッケージには `isdbt_rio.inp` と `LICENCE.siano` も含まれます。T230C の Si2168 / Si2141 のファームウェアは再配布できないため、[T230C の説明](docs/t230c.md)に従って配置してください。
@@ -329,7 +336,7 @@ BonDriver と同じフォルダに DriverHost_PX4.exe / DriverHost_PX4.ini / it9
 
 **v0.6.0 以降、winUSB 版 px4_drv 専用の WinSCard.dll を TVTest.exe や EpgDataCap_Bon.exe と同じフォルダに配置することで、内蔵カードリーダーが利用できるようになりました！**
 
-PX-S1UD V2.0、PX-Q1UD、MyGica T230C は内蔵カードリーダーを搭載していないため、B-CAS カードには外付けカードリーダーが必要です。
+PX-S1UD V2.0、PX-Q1UD、MyGica T230C、TurboSight TBS 5530 は内蔵カードリーダーを搭載していないため、B-CAS カードには外付けカードリーダーが必要です。
 
 Sony CECH-ZD1 J の内蔵 B-CAS カードスロットも `Sony CECH-ZD1 J Smart Card Reader` として利用できます。torne は地上デジタル専用で、BS / CS の受信には対応していません。
 
@@ -575,6 +582,14 @@ Linux 標準の `smsusb` ドライバーも同じ USB ID に結び付くため�
 
 受信できるのは ISDB-T のみで、1 台につき 1 つのデバイスファイルが作成されます。
 起動直後の機材だけが対象です。詳細は [XZ の別紙](docs/devices/xz.md) を参照してください。
+
+##### TurboSight TBS 5530 を接続した場合
+
+	$ ls /dev/tbs5530video*
+	/dev/tbs5530video0
+
+受信できるのは ISDB-T と ISDB-C です。接続のたびにファームウェア `dvb-usb-id5530.fw` を送るため、`/lib/firmware` に置いてください。
+詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) を参照してください。
 
 ### 4. 内蔵 B-CAS カードリーダーの利用
 

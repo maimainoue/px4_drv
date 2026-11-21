@@ -12,6 +12,7 @@
 #include "siano_device.hpp"
 #include "torne_device.hpp"
 #include "xz_device.hpp"
+#include "tbs5530_device.hpp"
 #include "dt295_device.hpp"
 
 namespace px4 {
@@ -32,6 +33,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::SIANO, L"SIANO" },
 	{ DeviceType::TORNE, L"TORNE" },
 	{ DeviceType::XZ, L"XZ" },
+	{ DeviceType::TBS5530, L"TBS5530" },
 	{ DeviceType::DT295, L"DT295" },
 };
 
@@ -88,6 +90,9 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 		return Make<SianoDevice>(path, definition, index, receiver_manager);
 	case DeviceType::TORNE:
 		return Make<TorneDevice>(path, definition, index, receiver_manager);
+	case DeviceType::TBS5530:
+		/* 地上波 1 受信機。ファームウェアは利用者が用意し、通電のたびに送る。 */
+		return Make<Tbs5530Device>(path, definition, index, receiver_manager);
 	case DeviceType::XZ:
 		/* 地上波 1 受信機と内蔵カード。mAgicVISION ファームウェアを使わず、起動直後の機材だけが対象。 */
 		return Make<XzDevice>(path, definition, index, receiver_manager);

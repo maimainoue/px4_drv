@@ -163,7 +163,9 @@
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_frontend.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_program.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_card.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\tbs5530\tbs5530_core.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\dt295_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\host\devices\tbs5530_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\..\driver\common\demod\cxd2856er.h">
@@ -319,6 +321,8 @@
     <ClInclude Include="..\..\..\driver\common\dt295\dt295_card.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\dt295\dt295_program_gen.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\host\devices\dt295_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\tbs5530\tbs5530_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\host\devices\tbs5530_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\..\pkg\DriverHost_PX4\DriverHost_PX4.ini">
