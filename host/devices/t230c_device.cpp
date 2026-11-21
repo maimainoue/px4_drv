@@ -292,10 +292,18 @@ int T230CDevice::Init()
 	if (t230c::LoadFirmwareFile(demod_path, demod_fw_, error))
 		throw DeviceError(std::string("T230C firmware: ") + error);
 
-	/* ブリッジの GPIO は Linux の identify_state と同じ順序で切り替える。 */
-	const std::uint8_t gpio[][2] = {{4, 1}, {0x83, 0}, {0xc0, 1}, {0x83, 1}, {0xc0, 0}};
-	const unsigned int waits[] = {20, 0, 100, 0, 50};
-	for (unsigned int i = 0; i < 5; ++i) {
+	/* ブリッジの GPIO は Linux の identify_state と同じ順序で切り替える。
+	 * T230A (0572:689A) は GPIO の割り当てが T230C2 と異なり、Linux 標準の dvb_usb_dvbsky の起動を usbmon で見ると、
+	 * 0x87=0、0x86=1、0x80=0 (約 100 ms 後) 0x80=1 (約 50 ms 後) の順に切り替えている (T230C2 の順序のままでは Si2168 が応答しない)。 */
+	const bool t230a = std::wcstoul(device_def_.configs.Get(L"ProductId", L"0").c_str(), nullptr, 0) == 0x689a;
+	static const std::uint8_t gpio_t230c[][2] = {{4, 1}, {0x83, 0}, {0xc0, 1}, {0x83, 1}, {0xc0, 0}};
+	static const unsigned int waits_t230c[] = {20, 0, 100, 0, 50};
+	static const std::uint8_t gpio_t230a[][2] = {{0x87, 0}, {0x86, 1}, {0x80, 0}, {0x80, 1}};
+	static const unsigned int waits_t230a[] = {20, 0, 100, 50};
+	const auto *gpio = t230a ? gpio_t230a : gpio_t230c;
+	const unsigned int *waits = t230a ? waits_t230a : waits_t230c;
+	const unsigned int gpio_steps = t230a ? 4 : 5;
+	for (unsigned int i = 0; i < gpio_steps; ++i) {
 		int ret = t230c_usb_gpio_set(&usb_core_, gpio[i][0], gpio[i][1],
 					     ControlTimeout(), kT230CResyncReadTimeoutMs,
 					     kT230CResyncMaxReadsPerEndpoint);

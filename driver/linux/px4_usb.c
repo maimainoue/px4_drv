@@ -348,7 +348,7 @@ static int px4_usb_probe(struct usb_interface *intf,
 		break;
 
 	case USB_VID_MYGICA:
-		if (id->idProduct != USB_PID_MYGICA_T230C2) {
+		if (id->idProduct != USB_PID_MYGICA_T230C2 && id->idProduct != USB_PID_MYGICA_T230A) {
 			ret = -EINVAL;
 			break;
 		}
@@ -491,6 +491,7 @@ static const struct usb_device_id px4_usb_ids[] = {
 	{ USB_DEVICE(0x0511, USB_PID_PX_S1UR) },
 	{ USB_DEVICE(0x0511, USB_PID_DIGIBEST_ISDBT2071) },
 	{ USB_DEVICE(USB_VID_MYGICA, USB_PID_MYGICA_T230C2) },
+	{ USB_DEVICE(USB_VID_MYGICA, USB_PID_MYGICA_T230A) },
 	{ USB_DEVICE(USB_VID_SIANO, USB_PID_SIANO_RIO) },
 	{ USB_DEVICE(USB_VID_SONY, USB_PID_TORNE) },
 	{ 0 }
