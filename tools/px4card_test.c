@@ -103,7 +103,8 @@ static void usage(const char *name)
 		"  -b BAUD      ATR の後に切り替える通信速度。9600、19200、38400。0 = 切り替えない (既定 19200)\n"
 		"  -l           /dev/px4card/ のデバイスファイルを一覧にして終わる\n"
 		"  -h           この説明を表示する\n"
-		"終了コード: 0 = すべて成功、1 = カードなし、ATR が来ない、または往復に失敗した、2 = 使い方の誤りまたは open の失敗\n",
+		"終了コード: 0 = すべて成功、1 = カードなし、ATR が来ない、または往復に失敗した、\n"
+		"             2 = 使い方の誤りまたは open の失敗、3 = 他のプロセス (pcscd など) が、カードリーダーを開いている\n",
 		name);
 }
 
@@ -178,6 +179,11 @@ int main(int argc, char **argv)
 	fd = open(path, O_RDWR);
 	if (fd < 0) {
 		fprintf(stderr, "open %s: %s\n", path, strerror(errno));
+		if (errno == EBUSY) {
+			/* カーネルモジュールは、T=1 の状態を 1 つのセッションだけが持てるよう、同時には 1 つのプロセスにしか開かせない */
+			fprintf(stderr, "他のプロセス (pcscd、録画ソフトなど) が、このカードリーダーを開いています。止めてから実行してください\n");
+			return 3;
+		}
 		return 2;
 	}
 	printf("device: %s\n", path);
