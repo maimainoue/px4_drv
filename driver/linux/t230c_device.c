@@ -62,6 +62,7 @@ static int t230c_bulk_transfer(void *context, t230c_u8 endpoint,
 	int transferred = 0;
 	int ret;
 	unsigned int pipe;
+	void *buffer;
 
 	if (!device || !device->usb_dev || !data || !size || !actual ||
 	    size > INT_MAX || !timeout_ms)
@@ -70,10 +71,21 @@ static int t230c_bulk_transfer(void *context, t230c_u8 endpoint,
 		? usb_rcvbulkpipe(device->usb_dev, endpoint)
 		: usb_sndbulkpipe(device->usb_dev, endpoint);
 	*actual = 0;
-	ret = usb_bulk_msg(device->usb_dev, pipe, data, (int)size,
+	/* 呼び出し元の command や response はスタック上にあり、VMAP_STACK のカーネルでは DMA に使えず
+	 * "transfer buffer is on stack" の警告とともに転送が失敗する (T230A の実機で確認)。ヒープ上の緩衝へ写して渡す。 */
+	buffer = kmalloc(size, GFP_KERNEL);
+	if (!buffer)
+		return -ENOMEM;
+	if (!(endpoint & USB_DIR_IN))
+		memcpy(buffer, data, size);
+	ret = usb_bulk_msg(device->usb_dev, pipe, buffer, (int)size,
 			&transferred, (int)timeout_ms);
-	if (transferred > 0)
+	if (transferred > 0) {
+		if (endpoint & USB_DIR_IN)
+			memcpy(data, buffer, transferred);
 		*actual = transferred;
+	}
+	kfree(buffer);
 	return ret;
 }
 
@@ -96,6 +108,27 @@ static int t230c_gpio_command(struct t230c_device *device,
 static int t230c_identify_state(struct t230c_device *device)
 {
 	int ret;
+
+	/* T230A (0572:689A) は GPIO の割り当てが T230C2 と異なる。標準の dvb_usb_dvbsky の起動を usbmon で見ると、
+	 * 0x87=0、0x86=1、0x80=0 (約 100 ms 後) 0x80=1 (約 50 ms 後) の順に切り替えている。 */
+	if (le16_to_cpu(device->usb_dev->descriptor.idProduct) == 0x689a) {
+		ret = t230c_gpio_command(device, 0x87, 0);
+		if (ret)
+			return ret;
+		msleep(20);
+		ret = t230c_gpio_command(device, 0x86, 1);
+		if (ret)
+			return ret;
+		ret = t230c_gpio_command(device, 0x80, 0);
+		if (ret)
+			return ret;
+		msleep(100);
+		ret = t230c_gpio_command(device, 0x80, 1);
+		if (ret)
+			return ret;
+		msleep(50);
+		return 0;
+	}
 
 	ret = t230c_gpio_command(device, 0x04, 1);
 	if (ret)
