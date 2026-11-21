@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <!--
+    機種表の整合試験 (tests/device_parity_test.cpp) の Windows 版。macOS の CMake の device_parity_test と同じ試験を、
+    DriverHost_PX4 のアプリ固有のファイル (main、driver_host、device_manager、device_notifier、notify_icon、card_server) を除いた
+    ソースへリンクして実行する。機種ファクトリーは全機種のクラスをリンクするため、DriverHost_PX4 と同じソースが要る。
+  -->
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release-static|Win32"><Configuration>Release-static</Configuration><Platform>Win32</Platform></ProjectConfiguration>
+    <ProjectConfiguration Include="Release-static|x64"><Configuration>Release-static</Configuration><Platform>x64</Platform></ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <VCProjectVersion>17.0</VCProjectVersion>
+    <ProjectGuid>{6E2A9C41-5B83-4D17-A0F6-3C8D71E4B925}</ProjectGuid>
+    <RootNamespace>DeviceParityTest</RootNamespace>
+    <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+    <PlatformToolset>v143</PlatformToolset>
+    <CharacterSet>Unicode</CharacterSet>
+    <UseDebugLibraries>false</UseDebugLibraries>
+    <SpectreMitigation>false</SpectreMitigation>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings" />
+  <ImportGroup Label="Shared" />
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(UserRootDir)\Microsoft.Cpp.$(Platform).user.props')" Label="LocalAppDataPlatform" />
+  </ImportGroup>
+  <PropertyGroup>
+    <PX4RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..').Replace('\','/'))</PX4RepoRoot>
+    <OutDir>$(MSBuildThisFileDirectory)..\build\$(PlatformTarget)\$(Configuration)\</OutDir>
+    <IntDir>$(MSBuildThisFileDirectory)build\device_parity_test\$(PlatformTarget)\$(Configuration)\</IntDir>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildThisFileDirectory)..\src\common;$(MSBuildThisFileDirectory)..\..\host\common;$(MSBuildThisFileDirectory)..\src\DriverHost_PX4;$(MSBuildThisFileDirectory)..\..\driver\common\include;$(MSBuildThisFileDirectory)..\..\driver\common\bridge;$(MSBuildThisFileDirectory)..\..\driver\common\demod;$(MSBuildThisFileDirectory)..\..\driver\common\tuner;$(MSBuildThisFileDirectory)..\..\driver\common\ts;$(MSBuildThisFileDirectory)..\..\driver\common\signal;$(MSBuildThisFileDirectory)..\..\driver\common\torne;$(MSBuildThisFileDirectory)..\..\driver\common\xz;$(MSBuildThisFileDirectory)..\..\driver\common\dt295;$(MSBuildThisFileDirectory)..\..\driver\common\tbs5530;$(MSBuildThisFileDirectory)..\..\host\core;$(MSBuildThisFileDirectory)..\..\host\devices</IncludePath>
+  </PropertyGroup>
+  <ItemDefinitionGroup>
+    <ClCompile>
+      <WarningLevel>Level3</WarningLevel>
+      <SDLCheck>true</SDLCheck>
+      <PreprocessorDefinitions>NDEBUG;_CONSOLE;PX4_REPO_ROOT=&quot;$(PX4RepoRoot)&quot;;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <ConformanceMode>true</ConformanceMode>
+      <LanguageStandard>stdcpp17</LanguageStandard>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <AdditionalOptions>/utf-8 %(AdditionalOptions)</AdditionalOptions>
+    </ClCompile>
+    <Link>
+      <SubSystem>Console</SubSystem>
+      <EnableCOMDATFolding>true</EnableCOMDATFolding>
+      <OptimizeReferences>true</OptimizeReferences>
+      <AdditionalDependencies>kernel32.lib;user32.lib;gdi32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;winusb.lib;setupapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\driver\common\demod\cxd2856er.c" />
+    <ClCompile Include="..\..\driver\common\signal\signal_stat.c" />
+    <ClCompile Include="..\..\driver\common\bridge\siano_wire_core.c" />
+    <ClCompile Include="..\..\driver\common\demod\cxd2858er.c" />
+    <ClCompile Include="..\..\driver\common\bridge\it930x.c" />
+    <ClCompile Include="..\..\driver\common\tuner\r850.c" />
+    <ClCompile Include="..\..\driver\common\tuner\rt710.c" />
+    <ClCompile Include="..\..\driver\common\bridge\t230c_usb.c" />
+    <ClCompile Include="..\..\driver\common\torne\torne_bridge.c" />
+    <ClCompile Include="..\..\driver\common\torne\torne_dib.c" />
+    <ClCompile Include="..\..\driver\common\torne\torne_card.c" />
+    <ClCompile Include="..\..\driver\common\xz\xz_link.c" />
+    <ClCompile Include="..\..\driver\common\xz\xz_board.c" />
+    <ClCompile Include="..\..\driver\common\xz\xz_frontend.c" />
+    <ClCompile Include="..\..\driver\common\xz\xz_program.c" />
+    <ClCompile Include="..\..\driver\common\xz\xz_card.c" />
+    <ClCompile Include="..\..\driver\common\dt295\dt295_link.c" />
+    <ClCompile Include="..\..\driver\common\dt295\dt295_board.c" />
+    <ClCompile Include="..\..\driver\common\dt295\dt295_frontend.c" />
+    <ClCompile Include="..\..\driver\common\dt295\dt295_program.c" />
+    <ClCompile Include="..\..\driver\common\dt295\dt295_card.c" />
+    <ClCompile Include="..\..\driver\common\tbs5530\tbs5530_core.c" />
+    <ClCompile Include="..\..\driver\common\demod\si2168.c" />
+    <ClCompile Include="..\..\driver\common\tuner\si2141.c" />
+    <ClCompile Include="..\..\driver\common\ts\t230c_ts_sync.c" />
+    <ClCompile Include="..\..\driver\common\demod\tc90522.c" />
+    <ClCompile Include="..\..\driver\common\ts\tsmf.c" />
+    <ClCompile Include="..\src\common\config.cpp" />
+    <ClCompile Include="..\src\common\msg.c" />
+    <ClCompile Include="..\..\host\common\msg_log.c" />
+    <ClCompile Include="..\src\common\pipe.cpp" />
+    <ClCompile Include="..\src\common\security_attributes.cpp" />
+    <ClCompile Include="..\src\common\util.cpp" />
+    <ClCompile Include="..\..\host\core\ctrl_server.cpp" />
+    <ClCompile Include="..\src\DriverHost_PX4\device_base.cpp" />
+    <ClCompile Include="..\..\host\core\device_definition_set.cpp" />
+    <ClCompile Include="..\..\host\core\device_factory.cpp" />
+    <ClCompile Include="..\..\host\devices\isdb2056_device.cpp" />
+    <ClCompile Include="..\..\host\devices\isdbt2071_device.cpp" />
+    <ClCompile Include="..\..\host\devices\t230c_device.cpp" />
+    <ClCompile Include="..\..\host\devices\t230c_protocol.cpp" />
+    <ClCompile Include="..\..\host\core\ts_stream_diagnostics.cpp" />
+    <ClCompile Include="..\..\host\devices\t230c_silicon.cpp" />
+    <ClCompile Include="..\..\host\devices\siano_device.cpp" />
+    <ClCompile Include="..\..\host\devices\torne_device.cpp" />
+    <ClCompile Include="..\..\host\devices\xz_device.cpp" />
+    <ClCompile Include="..\..\host\devices\dt295_device.cpp" />
+    <ClCompile Include="..\..\host\devices\tbs5530_device.cpp" />
+    <ClCompile Include="..\..\host\devices\siano_protocol.cpp" />
+    <ClCompile Include="..\..\host\devices\siano_wire.cpp" />
+    <ClCompile Include="..\src\DriverHost_PX4\itedtv_bus_winusb.c" />
+    <ClCompile Include="..\src\DriverHost_PX4\misc_win.c" />
+    <ClCompile Include="..\src\DriverHost_PX4\pipe_server.cpp" />
+    <ClCompile Include="..\..\host\devices\px4_device.cpp" />
+    <ClCompile Include="..\..\host\devices\pxmlt_device.cpp" />
+    <ClCompile Include="..\..\host\core\receiver_base.cpp" />
+    <ClCompile Include="..\..\host\core\ts_stats.cpp" />
+    <ClCompile Include="..\..\host\core\usb_history.cpp" />
+    <ClCompile Include="..\..\host\core\receiver_manager.cpp" />
+    <ClCompile Include="..\..\host\core\ringbuffer.cpp" />
+    <ClCompile Include="..\..\host\core\server_base.cpp" />
+    <ClCompile Include="..\..\host\core\stream_server.cpp" />
+    <ClCompile Include="..\..\host\core\smart_card.cpp" />
+    <ClCompile Include="..\..\tests\device_parity_test.cpp" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets" />
+</Project>
