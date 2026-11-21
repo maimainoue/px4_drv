@@ -52,6 +52,7 @@ static void siano_pack_header(u8 *message, u16 type, u8 source,
 static int siano_send(struct siano_device *device, const u8 *message,
 		      size_t length, unsigned long deadline)
 {
+	u8 *buffer;
 	int timeout;
 	int ret;
 	unsigned long remaining;
@@ -77,8 +78,17 @@ static int siano_send(struct siano_device *device, const u8 *message,
 		ret = -EIO;
 		goto exit;
 	}
+	/* 呼び出し元の message はスタック上の配列で、VMAP_STACK のカーネルでは DMA に使えない。
+	 * 8 バイトまでの短い OUT 転送は xHCI がイミディエイトデータで送るため通るが、ファームウェア転送の
+	 * 252 バイトは usb_submit_urb が -EAGAIN で失敗する (PX-S1UD V2.0 で確認)。ヒープ上の緩衝へ写して渡す。 */
+	buffer = kmemdup(message, length, GFP_KERNEL);
+	if (!buffer) {
+		ret = -ENOMEM;
+		goto exit;
+	}
 	device->bus.usb.ctrl_timeout = timeout;
-	ret = itedtv_bus_ctrl_tx(&device->bus, (void *)message, (int)length);
+	ret = itedtv_bus_ctrl_tx(&device->bus, buffer, (int)length);
+	kfree(buffer);
 exit:
 	mutex_unlock(&device->control_lock);
 	return ret;

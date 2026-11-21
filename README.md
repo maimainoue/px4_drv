@@ -29,7 +29,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | ISDB2056 / ISDBT2071 | ○ | ○ | ○ | 製品・ロットごとの検証範囲は別紙を参照 |
 | MyGica T230C 系 (USB `0572:c68a` は Linux の ID 表で T230C2) | △ | △ | △ | ISDB-C と J.83B (実験的)。ISDB-C の実機確認は Windows のみ。J.83B は実機信号で未確認 |
 | MyGica T230A (USB `0572:689a`) | △ | △ | △ | ISDB-C (実験的。T230C2 と同じ USB ブリッジ、Si2168、Si2141 を共有し、GPIO の手順だけが異なる)。実機確認は Linux 6.12 のみ。Windows と macOS は INF と設定を追加しただけで実機未確認。詳細は [T230C / T230A の別紙](docs/t230c.md) |
-| Siano RIO (PX-S1UD V2.0 / PX-Q1UD 系) | △ | △ | △ | ISDB-T のみ (実験的)。実機確認は Windows のみで、PX-Q1UD の1機能に未解決の受信差がある。詳細は [Siano の別紙](docs/siano_tuners.md) |
+| Siano RIO (PX-S1UD V2.0 / PX-Q1UD 系) | △ | △ | △ | ISDB-T のみ (実験的)。実機確認は Windows と、Linux 6.12 の PX-S1UD V2.0 (ISDB-T を 30 秒受信) まで。PX-Q1UD の1機能に未解決の受信差がある。詳細は [Siano の別紙](docs/siano_tuners.md) |
 | Sony CECH-ZD1 J (`054c:04b2`) | △ | △ | △ | ISDB-T 1基。macOS で30分受信、カード、復号を確認済み。Windows / Linux の実機は未確認。Linux は `/dev/tornevideo*` |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
