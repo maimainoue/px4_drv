@@ -220,6 +220,55 @@ int main()
 		std::fprintf(stderr, "Torne.inf does not match the WinUSB device definition\n");
 		ok = false;
 	}
+	/*
+	 * PIX-DT295: Rev.01 (06b8:103b) と Rev.02 (06b8:105c)。それぞれ別の DeviceInterfaceGUID を持ち、
+	 * WinUSB の INF が同じ GUID とハードウェア ID を持つこと。
+	 */
+	{
+		const std::set<unsigned> dt295_pids = { 0x103b, 0x105c };
+		std::string inf_path = root + "/winusb/pkg/inf/PIX-DT295.inf";
+		std::ifstream dt295_inf(inf_path, std::ios::binary);
+		const std::string dt295_inf_text((std::istreambuf_iterator<char>(dt295_inf)), std::istreambuf_iterator<char>());
+		for (const auto &[os_name, devices] : {
+			std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+			std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+			std::set<unsigned> found;
+			for (const auto &d : *devices) {
+				if (d.type != "DT295")
+					continue;
+				found.insert(d.pid);
+				if (d.systems != std::set<std::string>{"ISDB-T"}) {
+					std::fprintf(stderr, "%s DT295 must expose one ISDB-T receiver\n", os_name);
+					ok = false;
+				}
+				if (d.vid != 0x06b8) {
+					std::fprintf(stderr, "%s DT295 has vendor %04x, expected 06b8\n", os_name, d.vid);
+					ok = false;
+				}
+				if (d.interface_guid.empty()) {
+					std::fprintf(stderr, "%s DT295 lacks DeviceInterfaceGUID\n", os_name);
+					ok = false;
+				}
+				if (std::string(os_name) == "WinUSB" && dt295_inf_text.find(d.interface_guid) == std::string::npos) {
+					std::fprintf(stderr, "PIX-DT295.inf lacks the DeviceInterfaceGUID %s\n", d.interface_guid.c_str());
+					ok = false;
+				}
+			}
+			if (found != dt295_pids) {
+				std::fprintf(stderr, "%s INI must define DT295 Rev.01 and Rev.02\n", os_name);
+				ok = false;
+			}
+		}
+		if (dt295_inf_text.find("USB\\VID_06B8&PID_103B") == std::string::npos ||
+		    dt295_inf_text.find("USB\\VID_06B8&PID_105C") == std::string::npos) {
+			std::fprintf(stderr, "PIX-DT295.inf lacks a hardware ID\n");
+			ok = false;
+		}
+		if (px4::ParseDeviceType(L"DT295") == px4::DeviceType::UNKNOWN) {
+			std::fprintf(stderr, "device factory does not know Type=DT295\n");
+			ok = false;
+		}
+	}
 	for (const auto &[os_name, devices] : {
 		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
 		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {

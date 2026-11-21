@@ -36,6 +36,10 @@
 #define USB_VID_SONY 0x054c
 #define USB_PID_TORNE 0x04b2
 
+#define USB_VID_PIXELA 0x06b8
+#define USB_PID_PIX_DT295_REV01 0x103b
+#define USB_PID_PIX_DT295_REV02 0x105c
+
 
 enum px4_usb_device_type {
 	UNKNOWN_USB_DEVICE = 0,
@@ -50,6 +54,7 @@ enum px4_usb_device_type {
 	T230C_USB_DEVICE,
 	SIANO_USB_DEVICE,
 	TORNE_USB_DEVICE,
+	DT295_USB_DEVICE,
 	//----
 	MAX_USB_DEVICE_TYPE,
 };

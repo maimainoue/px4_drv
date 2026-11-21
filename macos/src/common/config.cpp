@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <cwchar>
 #include <cstdlib>
+#include <vector>
 
 namespace px4 {
 
