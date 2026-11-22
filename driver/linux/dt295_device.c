@@ -16,6 +16,7 @@
 #include <linux/kthread.h>
 #include <linux/ktime.h>
 #include <linux/math64.h>
+#include <linux/mm.h>
 #include <linux/sched.h>
 #include <linux/slab.h>
 #include <linux/string.h>

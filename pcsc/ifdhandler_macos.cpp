@@ -19,9 +19,13 @@ extern "C" {
 #include <cwchar>
 #include <map>
 #include <memory>
+#include <set>
 #include <mutex>
 #include <string>
 #include <syslog.h>
+
+#include <CoreFoundation/CoreFoundation.h>
+#include <IOKit/IOKitLib.h>
 #include <thread>
 #include <vector>
 
@@ -34,7 +38,13 @@ extern "C" {
 namespace {
 
 constexpr unsigned char MAX_READERS = 16;
-constexpr const wchar_t *TORNE_READER_PREFIX = L"Sony CECH-ZD1 J Smart Card Reader (ID: ";
+/* DriverHost_PX4 の内蔵カードリーダーの名前の前半。後ろに USB デバイスのパスから作る 16 桁の ID が続く。 */
+constexpr const wchar_t *READER_PREFIXES[] = {
+	L"Sony CECH-ZD1 J Smart Card Reader (ID: ",
+	L"I-O DATA GV-MVP/XZ Smart Card Reader (ID: ",
+	L"PIXELA PIX-DT295 Rev.01 Smart Card Reader (ID: ",
+	L"PIXELA PIX-DT295 Rev.02 Smart Card Reader (ID: ",
+};
 
 struct Reader {
 	std::mutex lock;
@@ -55,6 +65,8 @@ struct Reader {
 
 std::mutex readers_lock;
 std::map<DWORD, std::shared_ptr<Reader>> readers;
+/* リーダーの選択から登録までを 1 つずつ行い、同じリーダーを 2 つのチャンネルへ割り当てない。 */
+std::mutex select_lock;
 
 std::string CardSocketPath()
 {
@@ -164,10 +176,12 @@ RESPONSECODE MapError(const px4::card_command::Command &command)
 
 std::wstring ReaderId(const std::wstring &name)
 {
-	if (name.compare(0, std::wcslen(TORNE_READER_PREFIX), TORNE_READER_PREFIX) != 0 ||
-	    name.size() < std::wcslen(TORNE_READER_PREFIX) + 16)
-		return {};
-	return name.substr(std::wcslen(TORNE_READER_PREFIX), 16);
+	for (const wchar_t *prefix : READER_PREFIXES) {
+		const std::size_t length = std::wcslen(prefix);
+		if (name.compare(0, length, prefix) == 0 && name.size() >= length + 16)
+			return name.substr(length, 16);
+	}
+	return {};
 }
 
 bool ParseDeviceBusAddress(const char *device_name, std::wstring &path)
@@ -221,40 +235,209 @@ std::wstring HashDevicePath(const std::wstring &path)
 	return id;
 }
 
-bool SelectReader(Reader &reader, const char *device_name)
+/* リーダー名の「機種名」の部分 (" (ID: " の前)。Apple の IFD ホストは、IFDHCreateChannelByName の
+ * DeviceName に USB のパスではなく、Info.plist の ifdFriendlyName をそのまま渡す。 */
+std::wstring ModelName(const wchar_t *prefix)
+{
+	std::wstring model(prefix);
+	const std::wstring::size_type id = model.find(L" (ID: ");
+	return id == std::wstring::npos ? model : model.substr(0, id);
+}
+
+bool IsModelName(const std::wstring &name)
+{
+	for (const wchar_t *prefix : READER_PREFIXES)
+		if (name == ModelName(prefix))
+			return true;
+	return false;
+}
+
+struct UsbDevice {
+	std::uint32_t location = 0;
+	std::uint32_t address = 0;
+	std::uint64_t entry_id = 0; /* IOKit の登録 ID。USB 機器が接続された順に増える。 */
+};
+
+bool ReadUsbNumber(io_service_t service, const char *key, std::uint32_t &value)
+{
+	CFStringRef name = CFStringCreateWithCString(kCFAllocatorDefault, key, kCFStringEncodingUTF8);
+	if (!name)
+		return false;
+	CFTypeRef property = IORegistryEntryCreateCFProperty(service, name, kCFAllocatorDefault, 0);
+	CFRelease(name);
+	if (!property)
+		return false;
+	bool ok = false;
+	if (CFGetTypeID(property) == CFNumberGetTypeID())
+		ok = CFNumberGetValue(static_cast<CFNumberRef>(property), kCFNumberSInt32Type, &value);
+	CFRelease(property);
+	return ok;
+}
+
+/* 接続中の USB 機器のうち VID/PID が一致するものを、接続された順 (IOKit の登録 ID の昇順) で返す。
+ * DriverHost_PX4 のパス (libusb の BUS:ADDRESS) は、バスが locationID の上位 8 ビット、
+ * アドレスが IOKit の "USB Address" と一致する。 */
+std::vector<UsbDevice> EnumerateUsbDevices(unsigned vendor, unsigned product)
+{
+	std::vector<UsbDevice> devices;
+	io_iterator_t iterator = IO_OBJECT_NULL;
+	if (IOServiceGetMatchingServices(0, IOServiceMatching("IOUSBHostDevice"), &iterator) != KERN_SUCCESS)
+		return devices;
+	while (io_service_t service = IOIteratorNext(iterator)) {
+		std::uint32_t id_vendor = 0, id_product = 0;
+		UsbDevice device;
+		if (ReadUsbNumber(service, "idVendor", id_vendor) && ReadUsbNumber(service, "idProduct", id_product) &&
+		    id_vendor == vendor && id_product == product &&
+		    ReadUsbNumber(service, "locationID", device.location) &&
+		    ReadUsbNumber(service, "USB Address", device.address) &&
+		    IORegistryEntryGetRegistryEntryID(service, &device.entry_id) == KERN_SUCCESS)
+			devices.push_back(device);
+		IOObjectRelease(service);
+	}
+	IOObjectRelease(iterator);
+	std::sort(devices.begin(), devices.end(), [](const UsbDevice &a, const UsbDevice &b) {
+		return a.entry_id < b.entry_id;
+	});
+	return devices;
+}
+
+struct ModelUsbId {
+	const wchar_t *name;
+	unsigned vendor;
+	unsigned product;
+};
+constexpr ModelUsbId MODEL_USB_IDS[] = {
+	{ L"Sony CECH-ZD1 J Smart Card Reader", 0x054c, 0x04b2 },
+	{ L"I-O DATA GV-MVP/XZ Smart Card Reader", 0x04bb, 0x0530 },
+	{ L"PIXELA PIX-DT295 Rev.01 Smart Card Reader", 0x06b8, 0x103b },
+	{ L"PIXELA PIX-DT295 Rev.02 Smart Card Reader", 0x06b8, 0x105c },
+};
+
+enum class Selection { SELECTED, NOT_YET, FAILED };
+
+/* DriverHost_PX4 の内蔵カードリーダーの一覧から 1 台を選ぶ。NOT_YET は、該当するリーダーが
+ * まだ一覧にない状態で、DriverHost_PX4 の機器の初期化が終わる前の問い合わせで起こる。 */
+Selection SelectReaderOnce(Reader &reader, const char *device_name,
+			   const std::set<std::wstring> &claimed)
 {
 	px4::card_command::Command command{};
 	command.code = px4::card_command::Code::LIST_READERS;
 	if (!Exchange(reader, command) || command.reader_count > px4::card_command::MAX_READERS)
-		return false;
+		return Selection::FAILED;
 
 	std::vector<std::wstring> candidates;
 	for (std::uint32_t index = 0; index < command.reader_count; ++index) {
 		if (!std::wmemchr(command.readers[index], L'\0', px4::card_command::MAX_READER_NAME))
-			return false;
+			return Selection::FAILED;
 		const std::wstring name(command.readers[index]);
 		if (!ReaderId(name).empty())
 			candidates.push_back(name);
 	}
 	if (candidates.empty())
-		return false;
-	if (candidates.size() == 1) {
-		reader.name = candidates.front();
-		return true;
-	}
+		return Selection::NOT_YET;
 
 	std::wstring device_path;
 	if (ParseDeviceBusAddress(device_name, device_path)) {
 		const std::wstring wanted_id = HashDevicePath(device_path);
 		for (const auto &candidate : candidates)
 			if (ReaderId(candidate) == wanted_id) {
+				if (claimed.count(candidate))
+					return Selection::FAILED;
 				reader.name = candidate;
-				return true;
+				return Selection::SELECTED;
 		}
 	}
-	syslog(LOG_ERR, "Could not map macOS USB device '%s' to one of %zu torne readers",
+
+	/* DeviceName が機種名のとき、その機種の内蔵カードリーダーが 1 台だけならそれを選ぶ。
+	 * 同じ機種が複数台あると、機種名だけでは個体を区別できないため、誤ったカードへ接続せず失敗させる。
+	 * 機種名なのに該当するリーダーがない場合に、別の機種のリーダーへ接続してはならない。 */
+	std::wstring model;
+	for (const char *c = device_name ? device_name : ""; *c; ++c)
+		model.push_back(static_cast<unsigned char>(*c));
+	if (IsModelName(model)) {
+		const std::wstring prefix = model + L" (ID: ";
+		std::vector<std::wstring> same_model;
+		for (const auto &candidate : candidates)
+			if (candidate.compare(0, prefix.size(), prefix) == 0)
+				same_model.push_back(candidate);
+		/* 接続中の同じ機種の USB 機器の数。DriverHost_PX4 の一覧がそれに揃うまで待つ。 */
+		std::vector<UsbDevice> usb;
+		for (const auto &entry : MODEL_USB_IDS)
+			if (model == entry.name)
+				usb = EnumerateUsbDevices(entry.vendor, entry.product);
+		if (!usb.empty() && same_model.size() < usb.size())
+			return Selection::NOT_YET;
+		if (same_model.empty())
+			return Selection::NOT_YET;
+		if (same_model.size() == 1) {
+			/* 別のチャンネルが割り当て済みなら、同じ機種のもう 1 台が一覧に載るのを待つ。 */
+			if (claimed.count(same_model.front()))
+				return Selection::NOT_YET;
+			reader.name = same_model.front();
+			return Selection::SELECTED;
+		}
+		/* 同じ機種が複数台のとき、Apple の IFD ホストは個体を区別できる情報を渡さない。
+		 * 割り当て済みでないリーダーを持つ USB 機器のうち、最も早く接続されたものを選ぶ。
+		 * 1 台ずつ順に接続すれば、未割り当ての機器は常に 1 台で、順序を仮定せずに決まる。
+		 * 複数台を同時に接続したときだけ、Apple が機器を見つける順は接続順と仮定する。 */
+		for (const auto &device : usb) {
+			const std::wstring path = std::to_wstring(device.location >> 24) + L":" + std::to_wstring(device.address);
+			const std::wstring wanted_id = HashDevicePath(path);
+			for (const auto &name : same_model)
+				if (ReaderId(name) == wanted_id && !claimed.count(name)) {
+					syslog(LOG_NOTICE, "unclaimed usb device: location 0x%08x address %u entry %llu",
+					       device.location, device.address,
+					       static_cast<unsigned long long>(device.entry_id));
+					reader.name = name;
+					return Selection::SELECTED;
+				}
+		}
+		syslog(LOG_ERR, "Could not map '%s': no unclaimed reader (%zu readers, %zu usb devices)",
+		       device_name, same_model.size(), usb.size());
+		return Selection::FAILED;
+	}
+
+	if (candidates.size() == 1 && !claimed.count(candidates.front())) {
+		reader.name = candidates.front();
+		return Selection::SELECTED;
+	}
+	syslog(LOG_ERR, "Could not map macOS USB device '%s' to one of %zu px4 readers",
 		device_name ? device_name : "", candidates.size());
-	return false;
+	return Selection::FAILED;
+}
+
+/* リーダーを選び、同じ排他の中で Lun へ登録する。登録済みのリーダーは別のチャンネルへ割り当てない。 */
+bool SelectReader(DWORD lun, const std::shared_ptr<Reader> &reader_ptr, const char *device_name)
+{
+	Reader &reader = *reader_ptr;
+	/* 機器の初期化 (XZ と PIX-DT295 は基板の起動に数秒かかる) を待つ絶対期限。 */
+	const auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(15);
+	for (;;) {
+		Selection selection;
+		{
+			std::lock_guard<std::mutex> select_guard(select_lock);
+			std::set<std::wstring> claimed;
+			{
+				std::lock_guard<std::mutex> lock(readers_lock);
+				for (const auto &entry : readers)
+					claimed.insert(entry.second->name);
+			}
+			selection = SelectReaderOnce(reader, device_name, claimed);
+			if (selection == Selection::SELECTED) {
+				std::lock_guard<std::mutex> lock(readers_lock);
+				if (readers.size() >= MAX_READERS || readers.count(lun))
+					return false;
+				readers.emplace(lun, reader_ptr);
+				return true;
+			}
+		}
+		if (selection == Selection::FAILED || std::chrono::steady_clock::now() >= deadline) {
+			if (selection == Selection::NOT_YET)
+				syslog(LOG_ERR, "No px4 reader for '%s' within 15 s", device_name ? device_name : "");
+			return false;
+		}
+		std::this_thread::sleep_for(std::chrono::milliseconds(250));
+	}
 }
 
 std::shared_ptr<Reader> FindReader(DWORD lun)
@@ -312,12 +495,17 @@ extern "C" RESPONSECODE IFDHCreateChannelByName(DWORD Lun, LPSTR DeviceName)
 	try {
 		auto reader = std::make_shared<Reader>();
 		reader->fd = ConnectCardServer();
-		if (reader->fd < 0 || !SelectReader(*reader, DeviceName))
+		if (reader->fd < 0 || !SelectReader(Lun, reader, DeviceName)) {
+			syslog(LOG_ERR, "IFDHCreateChannelByName: Lun=0x%x DeviceName='%s' was not mapped",
+			       static_cast<unsigned>(Lun), DeviceName ? DeviceName : "");
 			return IFD_NO_SUCH_DEVICE;
-		std::lock_guard<std::mutex> lock(readers_lock);
-		if (readers.size() >= MAX_READERS || readers.count(Lun))
-			return IFD_COMMUNICATION_ERROR;
-		readers.emplace(Lun, std::move(reader));
+		}
+		/* syslog の %ls は出力されないため、リーダー名 (ASCII) を変換して出す。 */
+		std::string mapped;
+		for (wchar_t character : reader->name)
+			mapped.push_back(character < 0x80 ? static_cast<char>(character) : '?');
+		syslog(LOG_NOTICE, "IFDHCreateChannelByName: Lun=0x%x DeviceName='%s' -> %s",
+		       static_cast<unsigned>(Lun), DeviceName ? DeviceName : "", mapped.c_str());
 		return IFD_SUCCESS;
 	} catch (...) {
 		return IFD_COMMUNICATION_ERROR;
@@ -356,6 +544,17 @@ extern "C" RESPONSECODE IFDHGetCapabilities(DWORD Lun, DWORD Tag,
 		return IFD_COMMUNICATION_ERROR;
 	const DWORD capacity = *Length;
 	*Length = 0;
+	/* 同時に扱えるリーダー数はドライバー全体の値で、リーダーの登録前にも問い合わせられる。
+	 * Apple の IFD ホストは最初のチャンネルを開く前に問い合わせ、0 が返ると以後のリーダーを拒否する。 */
+	if (Tag == TAG_IFD_SIMULTANEOUS_ACCESS) {
+		if (capacity < 1)
+			return IFD_ERROR_INSUFFICIENT_BUFFER;
+		if (!Value)
+			return IFD_COMMUNICATION_ERROR;
+		*Value = MAX_READERS;
+		*Length = 1;
+		return IFD_SUCCESS;
+	}
 	return WithReader(Lun, [&](Reader &reader) -> RESPONSECODE {
 		unsigned char value = 1;
 		const void *data = &value;
@@ -363,8 +562,6 @@ extern "C" RESPONSECODE IFDHGetCapabilities(DWORD Lun, DWORD Tag,
 		if (Tag == TAG_IFD_ATR) {
 			data = reader.atr.data();
 			size = static_cast<DWORD>(reader.atr.size());
-		} else if (Tag == TAG_IFD_SIMULTANEOUS_ACCESS) {
-			value = MAX_READERS;
 		} else if (Tag != TAG_IFD_THREAD_SAFE && Tag != TAG_IFD_SLOT_THREAD_SAFE &&
 			   Tag != TAG_IFD_SLOTS_NUMBER) {
 			return IFD_ERROR_TAG;
@@ -409,7 +606,8 @@ extern "C" RESPONSECODE IFDHPowerICC(DWORD Lun, DWORD Action,
 {
 	if (!AtrLength)
 		return IFD_COMMUNICATION_ERROR;
-	const DWORD capacity = *AtrLength;
+	/* ATR のバッファは常に MAX_ATR_SIZE バイトで、*AtrLength は出力用の値。Apple の IFD ホストは入力時に
+	 * 0 を渡すため、これを容量として扱うとすべてのカードのリセットが失敗する。 */
 	*AtrLength = 0;
 	return WithReader(Lun, [&](Reader &reader) -> RESPONSECODE {
 		if (Action == IFD_POWER_DOWN) {
@@ -419,16 +617,20 @@ extern "C" RESPONSECODE IFDHPowerICC(DWORD Lun, DWORD Action,
 			reader.atr.clear();
 			return IFD_SUCCESS;
 		}
-		if (Action != IFD_POWER_UP && Action != IFD_RESET)
+		if (Action != IFD_POWER_UP && Action != IFD_RESET) {
+			syslog(LOG_ERR, "IFDHPowerICC: unsupported action %u", static_cast<unsigned>(Action));
 			return IFD_NOT_SUPPORTED;
-		if (!Atr || capacity < px4::card_command::MAX_ATR_SIZE)
-			return IFD_ERROR_INSUFFICIENT_BUFFER;
+		}
+		if (!Atr)
+			return IFD_COMMUNICATION_ERROR;
 		const bool newly_connected = !reader.card_connected;
 		if (newly_connected) {
 			auto connect = MakeCommand(px4::card_command::Code::CONNECT, reader);
 			connect.share_mode = static_cast<std::uint32_t>(px4::card_command::ShareMode::SHARED);
-			if (!Exchange(reader, connect))
+			if (!Exchange(reader, connect)) {
+				syslog(LOG_ERR, "IFDHPowerICC: CONNECT failed, error=%u", static_cast<unsigned>(connect.error));
 				return MapError(connect);
+			}
 			reader.card_connected = true;
 		}
 		auto command = MakeCommand(newly_connected ?
@@ -437,9 +639,12 @@ extern "C" RESPONSECODE IFDHPowerICC(DWORD Lun, DWORD Action,
 			reader.powered = false;
 			reader.protocol = SCARD_PROTOCOL_UNDEFINED;
 			reader.atr.clear();
+			syslog(LOG_ERR, "IFDHPowerICC: %s failed, error=%u", newly_connected ? "STATUS" : "RESET",
+			       static_cast<unsigned>(command.error));
 			return MapError(command);
 		}
 		if (newly_connected && (!command.card_present || !command.card_initialized)) {
+			syslog(LOG_ERR, "IFDHPowerICC: card present=%d initialized=%d", command.card_present, command.card_initialized);
 			reader.powered = false;
 			reader.protocol = SCARD_PROTOCOL_UNDEFINED;
 			reader.atr.clear();
@@ -477,14 +682,15 @@ extern "C" RESPONSECODE IFDHTransmitToICC(DWORD Lun, SCARD_IO_HEADER SendPci,
 {
 	if (!RxLength)
 		return IFD_COMMUNICATION_ERROR;
-	const DWORD capacity = *RxLength;
+	/* 受信バッファが DriverHost_PX4 の 1 回の応答の上限より大きいのは正常で、その分は使わない。 */
+	const DWORD capacity = (std::min)(*RxLength,
+		static_cast<DWORD>(px4::card_command::MAX_DATA_SIZE));
 	*RxLength = 0;
 	return WithReader(Lun, [&](Reader &reader) -> RESPONSECODE {
 		if (SendPci.Protocol != 1 || reader.protocol != SCARD_PROTOCOL_T1)
 			return IFD_PROTOCOL_NOT_SUPPORTED;
 		if (!reader.powered || !reader.card_connected || !TxBuffer || !TxLength ||
-		    !RxBuffer || !capacity || TxLength > px4::card_command::MAX_DATA_SIZE ||
-		    capacity > px4::card_command::MAX_DATA_SIZE)
+		    !RxBuffer || !capacity || TxLength > px4::card_command::MAX_DATA_SIZE)
 			return IFD_COMMUNICATION_ERROR;
 		auto command = MakeCommand(px4::card_command::Code::TRANSMIT, reader);
 		command.data_length = TxLength;
