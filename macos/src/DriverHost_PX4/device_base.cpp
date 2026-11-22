@@ -123,6 +123,8 @@ DeviceBase::DeviceBase(const std::wstring &path,
 					static_cast<wchar_t>(serial_buf[i]);
 			usb_dev_.serial->bLength          = static_cast<uint8_t>(2 + r * 2);
 			usb_dev_.serial->bDescriptorType  = 3; /* USB_STRING_DESCRIPTOR_TYPE */
+			/* 機種別の初期化 (PX-Q3U4 の筐体内のデバイス番号など) は、この文字列を読む。Windows 版と同じく設定する。 */
+			usb_serial_number_.assign(usb_dev_.serial->bString, static_cast<std::size_t>(r));
 		}
 	}
 
