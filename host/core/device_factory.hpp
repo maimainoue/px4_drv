@@ -30,6 +30,8 @@ enum class DeviceType : std::uint32_t {
 	DT295,
 	HZ2W,
 	UT100B,
+	/* USB VID/PIDを持たない内蔵デバイス。Linuxユーザーランド版(PX4_USERLAND)限定。 */
+	XCODE_CARD,
 };
 
 /* INI の Type 文字列から機種系統を引く。未知の値は UNKNOWN。 */

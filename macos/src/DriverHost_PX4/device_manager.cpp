@@ -94,6 +94,19 @@ DeviceManager::DeviceManager(const px4::DeviceDefinitionSet &device_defs,
 	/* Initial enumeration: scan for already-connected devices */
 	for (auto it = device_map_.cbegin(); it != device_map_.cend(); ++it)
 		Search(it->first, it->second);
+
+	/*
+	 * XCODE_CARD等の内蔵デバイスはUSBのVID/PIDを持たず、Search()の対象にならない。
+	 * 固定パス(Config:DevicePath)から1回だけAdd()する。パスが存在しなければ
+	 * Init()が失敗し、既存の「Init失敗」ログで静かに無視される(macOS実機など)。
+	 */
+	for (auto it = device_map_.cbegin(); it != device_map_.cend(); ++it) {
+		if (it->second.first != DeviceType::XCODE_CARD)
+			continue;
+		const std::wstring device_path =
+			it->second.second.configs.Get(L"DevicePath", L"/dev/vixs/xcodedrv");
+		Add(device_path, it->second);
+	}
 }
 
 DeviceManager::~DeviceManager()

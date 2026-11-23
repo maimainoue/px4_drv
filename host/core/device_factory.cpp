@@ -16,6 +16,9 @@
 #include "dt295_device.hpp"
 #include "hz2w_device.hpp"
 #include "ut100b_device.hpp"
+#if defined(__linux__) && defined(PX4_USERLAND)
+#include "xcode_card_device.hpp"
+#endif
 
 namespace px4 {
 
@@ -39,6 +42,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::DT295, L"DT295" },
 	{ DeviceType::HZ2W, L"HZ2W" },
 	{ DeviceType::UT100B, L"UT100B" },
+	{ DeviceType::XCODE_CARD, L"XCODE_CARD" },
 };
 
 template <typename T>
@@ -109,6 +113,13 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 	case DeviceType::UT100B:
 		/* 地上波 1 受信機と内蔵カード。warm (3275:7020) だけ。cold は HZ2W の定義が firmware を送る。 */
 		return Make<Ut100bDevice>(path, definition, index, receiver_manager);
+	case DeviceType::XCODE_CARD:
+#if defined(__linux__) && defined(PX4_USERLAND)
+		/* VIXS XCode6 SoC内蔵のACAS/B-CASリーダー。Linuxユーザーランド版限定、Windows/macOSには存在しない。 */
+		return Make<XcodeCardDevice>(path, definition, index, receiver_manager);
+#else
+		break;
+#endif
 	default:
 		break;
 	}

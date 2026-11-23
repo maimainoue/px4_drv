@@ -20,6 +20,8 @@
 | [devices/tbs5530.md](devices/tbs5530.md) | TurboSight TBS 5530 (ISDB-T) の構成 (FX2 のブリッジ、CXD6822 と内蔵チューナー)、ファームウェアの扱い、実機で分かった落とし穴 (`SET_INTERFACE`、FIFO の不整合)、実機試験 |
 | [devices/hz2w.md](devices/hz2w.md) | I-O DATA GV-MVP/HZ2W (ASICEN ASV5211) の実装資料: firmware の取り出し (`fwtool/asv5211fw`)、実機で分かったこと (起動、基板の情報、I2C の応答)、メーカー製ドライバーの静的解析、未確認の事項、実装の段階 |
 | [devices/ut100b.md](devices/ut100b.md) | Quixun QRS-UT100B (ASICEN ASV5211、HZ2W と同じブリッジ) の調査記録: 2 版の firmware での起動、warm の識別情報と EEPROM、起動時の GPIO、周期処理と機器が消える現象、内蔵 B-CAS カードの読み出し、TS の受信 (Linux の recfriio と Windows の BonDriver_HDP2)、64 ビット Windows でのドライバーの扱い、未確認の事項 |
+| [devices/hz2w.md](devices/hz2w.md) | I-O DATA GV-MVP/HZ2W (ASICEN ASV5211) の対応に向けた実装資料。メーカー製ドライバーの解析結果、firmware の取り出し (`fwtool/asv5211fw`)、未確認の事項、参考資料とライセンス、実装の段階 |
+| [devices/xcode_internal_card.md](devices/xcode_internal_card.md) | VIXS XCode6 搭載 STB (I-O DATA HVT-4KBC、SHARP 4S-C00AS1) の内蔵 ACAS/B-CAS リーダー。固定パスでの機種登録、`ioctl 0x25` のプロトコル、ライブ視聴中の同時アクセスに関する未確認事項 |
 
 ## 仕様
 
