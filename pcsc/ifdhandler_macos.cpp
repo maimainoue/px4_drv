@@ -44,6 +44,7 @@ constexpr const wchar_t *READER_PREFIXES[] = {
 	L"I-O DATA GV-MVP/XZ Smart Card Reader (ID: ",
 	L"PIXELA PIX-DT295 Rev.01 Smart Card Reader (ID: ",
 	L"PIXELA PIX-DT295 Rev.02 Smart Card Reader (ID: ",
+	L"I-O DATA GV-MVP/HZ2W Smart Card Reader (ID: ",
 };
 
 struct Reader {
@@ -311,6 +312,7 @@ constexpr ModelUsbId MODEL_USB_IDS[] = {
 	{ L"I-O DATA GV-MVP/XZ Smart Card Reader", 0x04bb, 0x0530 },
 	{ L"PIXELA PIX-DT295 Rev.01 Smart Card Reader", 0x06b8, 0x103b },
 	{ L"PIXELA PIX-DT295 Rev.02 Smart Card Reader", 0x06b8, 0x105c },
+	{ L"I-O DATA GV-MVP/HZ2W Smart Card Reader", 0x04bb, 0x0526 },
 };
 
 enum class Selection { SELECTED, NOT_YET, FAILED };

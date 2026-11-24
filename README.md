@@ -34,6 +34,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | PIXELA PIX-DT295 (`06b8:103b` / `06b8:105c`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (2 台の同時受信とカード)、macOS 11 の Intel Mac (2 台の同時受信と B-CAS の復号) まで。macOS では、スリープからの復帰後に選局に失敗し、`DriverHost_PX4` の再起動が必要になる。BS/CS は対象外。詳細は [DT295 の別紙](docs/devices/dt295.md) |
 | I-O DATA GV-MVP/XZ (`04bb:0530`。実機確認は XZ2 の 1 台) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (10 分の受信とカード)、macOS 11 の Intel Mac (11 分の受信と B-CAS の復号、抜去) まで。BS/CS は対象外。XZ と XZ3 の機材は未確認。詳細は [XZ の別紙](docs/devices/xz.md) |
 | TurboSight TBS 5530 (`734c:5530`) | △ | △ | △ | ISDB-T 1基 (実験的)。ISDB-C (CATV。J.83 Annex C、64QAM) も受信でき、Linux と macOS の実機で確認済み。Windows は実装のみで未確認 (Windows と macOS は `ExperimentalISDBC` で有効にする)。BS/CS (ISDB-S) は衛星側の M88RS6060 が DVB-S/S2 専用のため受信できない。ファームウェア `dvb-usb-id5530.fw` は利用者が用意する (毎回の接続で送る)。実機確認は Linux 6.12 (仮想マシンへのパススルーと実機のホスト)、macOS 11 の Intel Mac (DriverHost_PX4 で 60 秒の受信)、Windows 11 (BonDriver 経由の受信、10 分) まで。連続性エラーが出る (仮想マシンのパススルー経由は 10 秒あたり数十回。実機のホストでは、この環境で 5 秒に 1,700 回ほどの飛び) が、原因は未確認。カードリーダーを持たないため B-CAS は対象外。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) |
+| I-O DATA GV-MVP/HZ2W (`04bb:0526`、起動前は `1738:5211`) | × | △ | △ | **内蔵 B-CAS カードのみ** (実験的、地上波の受信は未対応)。B-CAS 初期化命令を、Linux (libusb) 版のホストで 1000 回、Windows 版 (cold からの起動を含む) で 8 回、すべて成功 (macOS と WinSCard 経由は未確認)。firmware は利用者が [fwtool](fwtool/) で取り出して置く。詳細は [HZ2W の別紙](docs/devices/hz2w.md) |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
 PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の受信経路を実機で確認しています。確認範囲と未確認の条件は、[DT295 の別紙](docs/devices/dt295.md) と [XZ の別紙](docs/devices/xz.md) に記載しています。
@@ -47,6 +48,7 @@ PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の
 - [PIXELA PIX-DT295](docs/devices/dt295.md)
 - [I-O DATA GV-MVP/XZ](docs/devices/xz.md)
 - [TurboSight TBS 5530](docs/devices/tbs5530.md)
+- [I-O DATA GV-MVP/HZ2W (内蔵カードのみ)](docs/devices/hz2w.md)
 - [確認用ツール (Linux のカーネルモジュール用。受信の質の集計、内蔵カードリーダーの試験)](docs/tools.md)
 
 設計記録、検証記録、カードリーダーの実装経緯を含む全文書の一覧は [docs/README.md](docs/README.md) にあります。
