@@ -79,6 +79,12 @@ private:
 	 */
 	std::timed_mutex control_mutex_;
 	std::mutex card_uart_mutex_;
+	/*
+	 * OpenCard() と CloseCard() を直列化する。CloseCard() の電源断が済む前に次のセッションが開いて電源を入れると、
+	 * 遅れて走る電源断が新しいセッションのカードを落とすため、電源断が済むまで次の OpenCard() を待たせる。
+	 * 取得順は card_session_mutex_ の後に card_uart_mutex_ (カードのレジスター操作ごと)。
+	 */
+	std::mutex card_session_mutex_;
 	std::unique_ptr<Receiver> receiver_;
 	std::shared_ptr<ReceiverBase::StreamBuffer> buffer_;
 	struct xz_bridge bridge_ = {};

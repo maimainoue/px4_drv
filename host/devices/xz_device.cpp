@@ -234,6 +234,8 @@ ReceiverBase *XzDevice::GetReceiver(int id) const
 
 int XzDevice::OpenCard()
 {
+	/* 直前の CloseCard() の電源断が済むまで待つ */
+	std::lock_guard<std::mutex> session_lock(card_session_mutex_);
 	if (!available_ || !board_up_)
 		return -ENODEV;
 	bool expected = false;
@@ -242,6 +244,8 @@ int XzDevice::OpenCard()
 
 void XzDevice::CloseCard()
 {
+	/* 電源断が済むまで、次の OpenCard() を待たせる */
+	std::lock_guard<std::mutex> session_lock(card_session_mutex_);
 	if (!card_open_.exchange(false) || !available_ || !board_up_)
 		return;
 	/* PC/SC が閉じた後はカード UART の電源を切る。受信回路の電源とは独立している。 */
