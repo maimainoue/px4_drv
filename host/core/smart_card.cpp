@@ -194,7 +194,12 @@ int SmartCard::Reset(std::vector<std::uint8_t> &atr, const Deadline &deadline)
 	block_timeout_ms_ = parameters.block_timeout_ms;
 	const bool is_acas = parameters.baudrate == 38400;
 	/* ACAS は IFS (254) から開始し、B-CAS は従来の RESYNCH を先に送る */
-	const std::uint8_t ifsd = is_acas ? 254 : (use_crc_ ? 250 : 251);
+	std::uint8_t ifsd = is_acas ? 254 : (use_crc_ ? 250 : 251);
+	/* 下位層の受信容量に収める (ヘッダー 3 バイトと EDC 1 または 2 バイトを除いた INF の長さ) */
+	const unsigned int block_limit = device_->MaxCardBlockSize();
+	const unsigned int overhead = 3 + (use_crc_ ? 2 : 1);
+	if (block_limit < 255 && block_limit > overhead && block_limit - overhead < ifsd)
+		ifsd = static_cast<std::uint8_t>(block_limit - overhead);
 	ret = InitializeT1(!is_acas, ifsd, deadline);
 	if (ret) {
 		InvalidateSession();
@@ -692,9 +697,11 @@ int SmartCard::TransmitInitialized(const std::uint8_t *send_buf,
 	std::size_t send_offset = 0;
 	std::uint8_t last_pcb = 0;
 	std::vector<std::uint8_t> last_data;
-	/* カードの IFSC が大きくても1回の UART 送信は255バイトを超えられない */
-	const std::size_t max_inf_length = CARD_UART_FRAME_MAX_LENGTH -
-		3 - (use_crc_ ? 2 : 1);
+	/* カードの IFSC が大きくても1回の UART 送信は255バイトを超えられない。下位層が 1 回で受けられるブロックが
+	 * それより短い機種 (HZ2W は 128 バイト) は、その長さを上限にする */
+	const std::size_t frame_limit = std::min<std::size_t>(
+		CARD_UART_FRAME_MAX_LENGTH, device_->MaxCardBlockSize());
+	const std::size_t max_inf_length = frame_limit - 3 - (use_crc_ ? 2 : 1);
 
 	while (send_offset < send_len) {
 		std::size_t chunk_length = std::min<std::size_t>(

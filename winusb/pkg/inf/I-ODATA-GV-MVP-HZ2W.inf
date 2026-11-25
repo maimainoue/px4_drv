@@ -1,0 +1,54 @@
+; I-O DATA GV-MVP/HZ2W: cold (1738:5211, ASICEN ASV5211) and warm (04BB:0526)
+; The cold USB ID may be shared with other ASV5211 devices (for example PLEX). Installing this INF binds them to WinUSB as well.
+[Version]
+Signature="$Windows NT$"
+Class=Media
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%AuthorName%
+DriverVer=11/24/2026,26.11.24.00
+CatalogFile=px4_drv_winusb.cat
+
+[Manufacturer]
+%AuthorName%=HZ2W_WinUSB,ntx86,ntamd64,ntarm64
+
+[HZ2W_WinUSB.ntx86]
+%HZ2W_COLD.DeviceDesc%=HZ2W_COLD.DeviceInstall,USB\VID_1738&PID_5211
+%HZ2W_WARM.DeviceDesc%=HZ2W_WARM.DeviceInstall,USB\VID_04BB&PID_0526
+[HZ2W_WinUSB.ntamd64]
+%HZ2W_COLD.DeviceDesc%=HZ2W_COLD.DeviceInstall,USB\VID_1738&PID_5211
+%HZ2W_WARM.DeviceDesc%=HZ2W_WARM.DeviceInstall,USB\VID_04BB&PID_0526
+[HZ2W_WinUSB.ntarm64]
+%HZ2W_COLD.DeviceDesc%=HZ2W_COLD.DeviceInstall,USB\VID_1738&PID_5211
+%HZ2W_WARM.DeviceDesc%=HZ2W_WARM.DeviceInstall,USB\VID_04BB&PID_0526
+
+[HZ2W_COLD.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=HZ2W.DeviceSetup.AddProperty
+[HZ2W_COLD.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[HZ2W_COLD.DeviceInstall.HW]
+AddReg=HZ2W_COLD.DeviceSetup.AddReg
+[HZ2W_COLD.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{29828700-3473-435D-8543-021C544A9DA2}"
+
+[HZ2W_WARM.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=HZ2W.DeviceSetup.AddProperty
+[HZ2W_WARM.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[HZ2W_WARM.DeviceInstall.HW]
+AddReg=HZ2W_WARM.DeviceSetup.AddReg
+[HZ2W_WARM.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{CD6AE7C3-5A4D-42A4-B33F-F0F0A6CFAEED}"
+
+[HZ2W.DeviceSetup.AddProperty]
+{afd97640-86a3-4210-b67c-289c41aabe55},3,0x00000011,,0
+
+[Strings]
+AuthorName="px4_drv contributors"
+HZ2W_COLD.DeviceDesc="I-O DATA GV-MVP/HZ2W (firmware loader, WinUSB)"
+HZ2W_WARM.DeviceDesc="I-O DATA GV-MVP/HZ2W Smart Card Reader (WinUSB)"

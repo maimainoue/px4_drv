@@ -14,8 +14,10 @@ modules.order
 
 /driver/revision.h
 /fwtool/fwtool
+/fwtool/asv5211fw
 
 fwtool/*.bin
+fwtool/*.dll
 *.sys
 *.zip
 

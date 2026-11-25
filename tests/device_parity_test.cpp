@@ -359,6 +359,51 @@ int main()
 			ok = false;
 		}
 	}
+	/*
+	 * GV-MVP/HZ2W: 内蔵カードリーダーだけ (受信機の定義なし)。cold (1738:5211) と warm (04bb:0526) を別の定義にし、
+	 * どちらも WinUSB の INF に同じ DeviceInterfaceGUID と USB ID がある。
+	 */
+	{
+		/* VID と PID の組。Windows の cold の VID を warm と取り違えると、ホストが定義を拒否する */
+		const std::set<std::pair<unsigned, unsigned>> hz2w_ids = { { 0x1738, 0x5211 }, { 0x04bb, 0x0526 } };
+		std::ifstream hz2w_inf(root + "/winusb/pkg/inf/I-ODATA-GV-MVP-HZ2W.inf", std::ios::binary);
+		const std::string hz2w_inf_text((std::istreambuf_iterator<char>(hz2w_inf)), std::istreambuf_iterator<char>());
+		for (const auto &[os_name, devices] : {
+			std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+			std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+			std::set<std::pair<unsigned, unsigned>> found;
+			for (const auto &d : *devices) {
+				if (d.type != "HZ2W")
+					continue;
+				if (!d.systems.empty()) {
+					std::fprintf(stderr, "%s HZ2W must not define a receiver\n", os_name);
+					ok = false;
+				}
+				if (d.interface_guid.empty()) {
+					std::fprintf(stderr, "%s HZ2W lacks DeviceInterfaceGUID\n", os_name);
+					ok = false;
+				}
+				if (std::string(os_name) == "WinUSB" && hz2w_inf_text.find(d.interface_guid) == std::string::npos) {
+					std::fprintf(stderr, "I-ODATA-GV-MVP-HZ2W.inf lacks the DeviceInterfaceGUID %s\n", d.interface_guid.c_str());
+					ok = false;
+				}
+				found.insert({ d.vid, d.pid });
+			}
+			if (found != hz2w_ids) {
+				std::fprintf(stderr, "%s INI must define HZ2W cold and warm\n", os_name);
+				ok = false;
+			}
+		}
+		if (hz2w_inf_text.find("USB\\VID_1738&PID_5211") == std::string::npos ||
+		    hz2w_inf_text.find("USB\\VID_04BB&PID_0526") == std::string::npos) {
+			std::fprintf(stderr, "I-ODATA-GV-MVP-HZ2W.inf lacks a hardware ID\n");
+			ok = false;
+		}
+		if (px4::ParseDeviceType(L"HZ2W") == px4::DeviceType::UNKNOWN) {
+			std::fprintf(stderr, "device factory does not know Type=HZ2W\n");
+			ok = false;
+		}
+	}
 	for (const auto &[os_name, devices] : {
 		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
 		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
@@ -394,6 +439,9 @@ int main()
 	 * Linux 版の未対応機種。ここに無い差は失敗にする。
 	 */
 	const std::set<std::pair<unsigned, unsigned>> linux_pending = {
+		/* GV-MVP/HZ2W は内蔵カードだけをホスト (WinUSB、macOS) で扱い、カーネルモジュールは未対応。 */
+		{0x1738, 0x5211},
+		{0x04bb, 0x0526},
 	};
 	const auto linux_ids = LoadLinuxIds(root);
 	if (linux_ids.empty()) {

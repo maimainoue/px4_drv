@@ -14,6 +14,7 @@
 #include "xz_device.hpp"
 #include "tbs5530_device.hpp"
 #include "dt295_device.hpp"
+#include "hz2w_device.hpp"
 
 namespace px4 {
 
@@ -35,6 +36,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::XZ, L"XZ" },
 	{ DeviceType::TBS5530, L"TBS5530" },
 	{ DeviceType::DT295, L"DT295" },
+	{ DeviceType::HZ2W, L"HZ2W" },
 };
 
 template <typename T>
@@ -99,6 +101,9 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 	case DeviceType::DT295:
 		/* Rev.01 と Rev.02 は USB ID だけが違い、同じクラスを使う。起動直後の機材だけが対象。 */
 		return Make<Dt295Device>(path, definition, index, receiver_manager);
+	case DeviceType::HZ2W:
+		/* 内蔵カードリーダーだけ (受信機なし)。cold (1738:5211) は firmware を送って再列挙させ、warm (04bb:0526) がカードを開く。 */
+		return Make<Hz2wDevice>(path, definition, index, receiver_manager);
 	default:
 		break;
 	}

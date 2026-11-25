@@ -86,6 +86,7 @@ include_directories(
     "${DRIVER_DIR}/common/torne"
     "${DRIVER_DIR}/common/xz"
     "${DRIVER_DIR}/common/dt295"
+    "${DRIVER_DIR}/common/hz2w"
     "${DRIVER_DIR}/common/tbs5530"
     "${LIBUSB_INCLUDE_DIRS}"
 )
@@ -153,6 +154,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/torne_device.cpp"
     "${HOST_SRC}/devices/xz_device.cpp"
     "${HOST_SRC}/devices/dt295_device.cpp"
+    "${HOST_SRC}/devices/hz2w_device.cpp"
     "${HOST_SRC}/devices/tbs5530_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
@@ -186,6 +188,8 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/dt295/dt295_frontend.c"
     "${DRIVER_DIR}/common/dt295/dt295_program.c"
     "${DRIVER_DIR}/common/dt295/dt295_card.c"
+    "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
+    "${DRIVER_DIR}/common/hz2w/hz2w_card.c"
     "${DRIVER_DIR}/common/tbs5530/tbs5530_core.c"
     "${DRIVER_DIR}/common/signal/signal_stat.c"
     "${DRIVER_DIR}/common/demod/cxd2856er.c"
@@ -390,6 +394,14 @@ if(BUILD_TESTING)
         "${DRIVER_DIR}/common/torne/torne_card.c")
     target_include_directories(dt295_card_uart_test PRIVATE "${DRIVER_DIR}/common/dt295" "${DRIVER_DIR}/common/torne")
     add_test(NAME dt295_card_uart_test COMMAND dt295_card_uart_test)
+
+    # GV-MVP/HZ2W の共通層 (模擬機材) の自動試験。
+    add_executable(hz2w_core_test
+        "${REPO_ROOT}/tests/hz2w_core_test.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
+    target_include_directories(hz2w_core_test PRIVATE "${DRIVER_DIR}/common/hz2w")
+    add_test(NAME hz2w_core_test COMMAND hz2w_core_test)
 
     # 全機種共通の ATR / T=1 状態機械の模擬 I/O 回帰試験。
     add_executable(smart_card_state_test

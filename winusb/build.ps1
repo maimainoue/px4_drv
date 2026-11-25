@@ -142,6 +142,16 @@ foreach ($build_platform in $build_platforms) {
         throw "DT295 card UART test failed. platform: $build_platform"
     }
 
+    # GV-MVP/HZ2W common layer (mock device).
+    msbuild tests/hz2w_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ2W core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/hz2w_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "HZ2W core test failed. platform: $build_platform"
+    }
+
     # TBS 5530 common layer (mock device).
     msbuild tests/tbs5530_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
