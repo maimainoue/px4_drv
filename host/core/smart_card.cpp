@@ -194,7 +194,12 @@ int SmartCard::Reset(std::vector<std::uint8_t> &atr, const Deadline &deadline)
 	block_timeout_ms_ = parameters.block_timeout_ms;
 	const bool is_acas = parameters.baudrate == 38400;
 	/* ACAS は IFS (254) から開始し、B-CAS は従来の RESYNCH を先に送る */
-	const std::uint8_t ifsd = is_acas ? 254 : (use_crc_ ? 250 : 251);
+	std::uint8_t ifsd = is_acas ? 254 : (use_crc_ ? 250 : 251);
+	/* 下位層の受信容量に収める (ヘッダー 3 バイトと EDC 1 または 2 バイトを除いた INF の長さ) */
+	const unsigned int block_limit = device_->MaxCardBlockSize();
+	const unsigned int overhead = 3 + (use_crc_ ? 2 : 1);
+	if (block_limit < 255 && block_limit > overhead && block_limit - overhead < ifsd)
+		ifsd = static_cast<std::uint8_t>(block_limit - overhead);
 	ret = InitializeT1(!is_acas, ifsd, deadline);
 	if (ret) {
 		InvalidateSession();

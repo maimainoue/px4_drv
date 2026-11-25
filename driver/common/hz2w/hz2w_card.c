@@ -57,14 +57,25 @@ void hz2w_card_set_timeout(struct hz2w_card *card, unsigned int timeout_ms)
 	card->deadline_ms = card->bridge->ops->now_ms(card->bridge->priv) + timeout_ms;
 }
 
-/* 絶対期限を過ぎていれば真。期限が未設定なら now から既定の待ちを設定する。 */
+/*
+ * 期限は操作 (reset、write) 単位。set_timeout で渡された絶対期限は次の 1 回の操作で使い切り、
+ * 渡されていなければ操作の始めに既定の待ちを設定する (前の操作の期限を引き継がない)。
+ */
+static void begin_operation(struct hz2w_card *card)
+{
+	if (!card->deadline_ms)
+		card->deadline_ms = card->bridge->ops->now_ms(card->bridge->priv) + CARD_DEFAULT_TIMEOUT_MS;
+}
+
+static void end_operation(struct hz2w_card *card)
+{
+	card->deadline_ms = 0;
+}
+
+/* 絶対期限を過ぎていれば真 */
 static bool expired(struct hz2w_card *card)
 {
-	const u64 now = card->bridge->ops->now_ms(card->bridge->priv);
-
-	if (!card->deadline_ms)
-		card->deadline_ms = now + CARD_DEFAULT_TIMEOUT_MS;
-	return now >= card->deadline_ms;
+	return card->bridge->ops->now_ms(card->bridge->priv) >= card->deadline_ms;
 }
 
 static void sleep_ms(struct hz2w_card *card, unsigned int ms)
@@ -239,8 +250,10 @@ int hz2w_card_power_down(struct hz2w_card *card)
 	card->rx_pos = 0;
 	if (!card->powered)
 		return 0;
-	/* ベンダーの終了: reg0 = 0x0c (ガード付き)、100 ms 待ち、reg 0x80、0x04、0x00 を 0 にする。 */
-	card->powered = false;
+	/*
+	 * ベンダーの終了: reg0 = 0x0c (ガード付き)、100 ms 待ち、reg 0x80、0x04、0x00 を 0 にする。
+	 * powered は終了が最後まで済んでから落とす (途中で失敗したら、次の呼び出しが最初からやり直す)。
+	 */
 	ret = new_nonce(card);
 	if (ret)
 		return ret;
@@ -254,10 +267,14 @@ int hz2w_card_power_down(struct hz2w_card *card)
 	ret = wr(card, CARD_REG_STATE, 0x00);
 	if (ret)
 		return ret;
-	return wr(card, CARD_REG_CMD, 0x00);
+	ret = wr(card, CARD_REG_CMD, 0x00);
+	if (ret)
+		return ret;
+	card->powered = false;
+	return 0;
 }
 
-int hz2w_card_reset(struct hz2w_card *card)
+static int card_reset(struct hz2w_card *card)
 {
 	u8 state = 0, length = 0;
 	bool present;
@@ -297,9 +314,11 @@ int hz2w_card_reset(struct hz2w_card *card)
 	if (ret)
 		return ret;
 	sleep_ms(card, 200);
+	/* 0x09 を送った後は、失敗しても機器の電源が入っていることがあるため、終了処理へ進める */
+	card->powered = true;
 	ret = wr(card, CARD_REG_CMD, 0x09);
 	if (ret)
-		return ret;
+		goto fail;
 	sleep_ms(card, 60);
 	/* 電源が入ると reg4 が 0x81 になり、reg3 に ATR の長さが入る (受信の途中は 1 で、完了すると増える)。 */
 	ret = new_nonce(card);
@@ -321,7 +340,6 @@ int hz2w_card_reset(struct hz2w_card *card)
 		}
 		sleep_ms(card, CARD_POLL_MS);
 	}
-	card->powered = true;
 	for (;;) {
 		ret = guarded_read(card, CARD_REG_LEN, &length);
 		if (ret)
@@ -341,12 +359,21 @@ int hz2w_card_reset(struct hz2w_card *card)
 		sleep_ms(card, CARD_POLL_MS);
 	}
 fail:
-	/* 途中で失敗したら電源を落として、次の ResetCard を最初からやり直せる状態に戻す。 */
+	/* 途中で失敗したら電源を落とす。落とせなければ powered を残し、次の呼び出しが落とし直す。 */
 	card->powered = true;
 	hz2w_card_power_down(card);
-	card->powered = false;
 	card->rx_len = 0;
 	card->rx_pos = 0;
+	return ret;
+}
+
+int hz2w_card_reset(struct hz2w_card *card)
+{
+	int ret;
+
+	begin_operation(card);
+	ret = card_reset(card);
+	end_operation(card);
 	return ret;
 }
 
@@ -367,7 +394,7 @@ int hz2w_card_read(struct hz2w_card *card, u8 *data, u8 *length)
 	return 0;
 }
 
-int hz2w_card_write(struct hz2w_card *card, const u8 *data, u8 length)
+static int card_write(struct hz2w_card *card, const u8 *data, u8 length)
 {
 	u8 response_length = 0;
 	unsigned int i;
@@ -383,6 +410,8 @@ int hz2w_card_write(struct hz2w_card *card, const u8 *data, u8 length)
 	ret = new_nonce(card);
 	if (ret)
 		return ret;
+	if (expired(card))
+		return -ETIMEDOUT;
 	/* 命令: reg0 = 0x0c、reg1 = 0x01 (この 1 つだけ通常の書き込み)、長さ、バッファ、reg0 = 0x0a で実行 */
 	ret = guarded_write(card, CARD_REG_CMD, 0x0c);
 	if (!ret)
@@ -402,6 +431,9 @@ int hz2w_card_write(struct hz2w_card *card, const u8 *data, u8 length)
 	/* 実行の前にページ 0 へ戻す (ベンダーは先頭のページを指した状態で実行する) */
 	if (!ret && length > HZ2W_CARD_PAGE_SIZE)
 		ret = guarded_write(card, CARD_REG_PAGE, 0x00);
+	/* 期限を過ぎた命令はカードで実行させない */
+	if (!ret && expired(card))
+		ret = -ETIMEDOUT;
 	if (!ret)
 		ret = guarded_write(card, CARD_REG_CMD, 0x0a);
 	if (ret)
@@ -417,5 +449,15 @@ int hz2w_card_write(struct hz2w_card *card, const u8 *data, u8 length)
 fail:
 	card->rx_len = 0;
 	card->rx_pos = 0;
+	return ret;
+}
+
+int hz2w_card_write(struct hz2w_card *card, const u8 *data, u8 length)
+{
+	int ret;
+
+	begin_operation(card);
+	ret = card_write(card, data, length);
+	end_operation(card);
 	return ret;
 }

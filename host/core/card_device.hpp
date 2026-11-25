@@ -27,6 +27,8 @@ public:
 		(void)timeout_ms;
 		return 0;
 	}
+	/* 下位層が 1 回で受け取れる T=1 ブロック (NAD、PCB、LEN、INF、EDC) の最大長。IFSD はこれに収める。 */
+	virtual std::uint8_t MaxCardBlockSize() const noexcept { return 255; }
 };
 
 } // namespace px4

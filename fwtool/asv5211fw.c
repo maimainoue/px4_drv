@@ -21,6 +21,8 @@
 #if defined(_MSC_VER) && !defined(_CRT_SECURE_NO_WARNINGS)
 #define _CRT_SECURE_NO_WARNINGS
 #endif
+#include <errno.h>
+#include <limits.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -434,7 +436,17 @@ int main(int argc, char **argv)
 		if (!strcmp(argv[i], "-l")) {
 			list_only = 1;
 		} else if (!strcmp(argv[i], "-n") && i + 1 < argc) {
-			pick = atoi(argv[++i]);
+			char *end;
+			long value;
+
+			errno = 0;
+			value = strtol(argv[++i], &end, 10);
+			if (end == argv[i] || *end || errno || value < 0 || value > INT_MAX) {
+				fprintf(stderr, "-n の値が不正です: %s\n", argv[i]);
+				usage(argv[0]);
+				return 2;
+			}
+			pick = (int)value;
 		} else if (!strcmp(argv[i], "-h") || !strcmp(argv[i], "--help")) {
 			usage(argv[0]);
 			return 0;
@@ -499,7 +511,11 @@ int main(int argc, char **argv)
 			fclose(fp);
 		goto out;
 	}
-	fclose(fp);
+	/* 書き込みの遅延エラーは fclose で分かる */
+	if (fclose(fp) != 0) {
+		fprintf(stderr, "%s へ書き出せません (close に失敗)\n", output);
+		goto out;
+	}
 	printf("[%d] を %s へ書き出しました (%d バイト)\n", pick, output, FW_SIZE);
 	if (list[pick].known)
 		printf("起動アドレス (wIndex): 0x%04x\n", list[pick].known->index);

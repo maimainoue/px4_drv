@@ -95,7 +95,14 @@ int Hz2wDevice::Control(u8 request_type, u8 request, u16 value, u16 index, void 
 		return -ENODEV;
 	if (length && !buffer)
 		return -EINVAL;
-	const unsigned int timeout = request_type == HZ2W_REQ_OUT ? kFirmwareControlTimeoutMs : kControlTimeoutMs;
+	unsigned int timeout = request_type == HZ2W_REQ_OUT ? kFirmwareControlTimeoutMs : kControlTimeoutMs;
+	/* カードの操作中 (bus_mutex_ を持つ呼び出し側) は、各転送を操作の残り時間で打ち切る。 */
+	if (card_op_active_ && card_.deadline_ms) {
+		const u64 now = NowCallback(nullptr);
+		const u64 remaining = card_.deadline_ms > now ? card_.deadline_ms - now : 1;
+		if (remaining < timeout)
+			timeout = static_cast<unsigned int>(remaining);
+	}
 #if defined(__APPLE__) || defined(PX4_USERLAND)
 	const int ret = libusb_control_transfer(usb_dev_.handle, request_type, request,
 		value, index, static_cast<unsigned char *>(buffer), length, timeout);
@@ -193,14 +200,12 @@ int Hz2wDevice::LoadFirmware()
 	if (!boot || boot > 0xffff)
 		return -EINVAL;
 	const int ret = hz2w_fw_load(&bridge_, firmware_.data(), firmware_.size(), static_cast<u16>(boot));
-	if (ret == -ENODEV || ret == -EIO) {
-		/* 最後の転送の直後に機器が切り離される。最初の転送で失敗した場合も同じ戻り値になるため、値をログへ残す。 */
-		msg_log_at(PX4_LOG_INFO, PX4_LOG_CAT_DEVICE,
-			   "HZ2W: firmware sent, the device is re-enumerating (ret=%d)\n", ret);
-		return -ENODEV;
-	}
-	if (ret)
+	if (ret < 0) {
+		/* 途中の転送の失敗は、再列挙とは区別して元のエラーを返す。 */
+		msg_err("HZ2W: firmware transfer failed: %d\n", ret);
 		return ret;
+	}
+	/* 全て成功したか、最後の転送の直後に機器が切り離された (HZ2W_FW_REENUMERATING)。どちらも warm の到着を待つ。 */
 	msg_log_at(PX4_LOG_INFO, PX4_LOG_CAT_DEVICE, "HZ2W: firmware sent, waiting for re-enumeration\n");
 	return -ENODEV;
 }
@@ -269,14 +274,20 @@ void Hz2wDevice::KeepaliveThread()
 		int ret = 0;
 		{
 			std::lock_guard<std::mutex> lock(bus_mutex_);
+			/* Term() が閉じる手順を済ませた後は何も送らない */
+			if (!board_open_)
+				return;
 			const auto now = clock::now();
 			if (now >= next_state) {
 				ret = hz2w_keepalive_card_state(&bridge_);
 				next_state = now + kCardStatePeriod;
 			}
-			if (!ret && now >= next_watchdog) {
-				ret = hz2w_keepalive_watchdog(&bridge_);
+			/* watchdog はカード状態の成否と独立に送る (状態の要求が続けて失敗しても 0x22 を止めない) */
+			if (ret != -ENODEV && now >= next_watchdog) {
+				const int wd = hz2w_keepalive_watchdog(&bridge_);
 				next_watchdog = now + kWatchdogPeriod;
+				if (!ret || wd == -ENODEV)
+					ret = wd;
 			}
 		}
 		if (ret == -ENODEV) {
@@ -358,17 +369,25 @@ int Hz2wDevice::OpenCard()
 {
 	if (!available_ || cold_ || !initialized_)
 		return -ENODEV;
+	/* CloseCard() の終了処理 (bus_mutex_ の中) が済むまでは開かない */
+	std::lock_guard<std::mutex> lock(bus_mutex_);
 	bool expected = false;
 	return card_open_.compare_exchange_strong(expected, true) ? 0 : -EALREADY;
 }
 
 void Hz2wDevice::CloseCard()
 {
-	if (!card_open_.exchange(false) || !available_)
-		return;
+	/* 電源断と状態の破棄が済むまで card_open_ を残し、次のセッションを開かせない。 */
 	std::lock_guard<std::mutex> lock(bus_mutex_);
-	NoteResult(hz2w_card_power_down(&card_));
+	if (!card_open_)
+		return;
+	if (available_) {
+		const int ret = NoteResult(hz2w_card_power_down(&card_));
+		if (ret)
+			msg_warn("HZ2W %s: CloseCard: power down failed: %d\n", dev_.device_name, ret);
+	}
 	hz2w_card_discard(&card_);
+	card_open_ = false;
 }
 
 int Hz2wDevice::DetectCard(bool &detected)
@@ -387,7 +406,9 @@ int Hz2wDevice::ResetCard()
 	if (!card_open_)
 		return -ENODEV;
 	std::lock_guard<std::mutex> lock(bus_mutex_);
+	card_op_active_ = true;
 	const int ret = NoteResult(hz2w_card_reset(&card_));
+	card_op_active_ = false;
 	if (ret)
 		msg_warn("HZ2W %s: ResetCard failed: %d\n", dev_.device_name, ret);
 	return ret;
@@ -447,7 +468,9 @@ int Hz2wDevice::WriteCardData(const std::uint8_t *buf, std::uint8_t len)
 		return -EINVAL;
 	std::lock_guard<std::mutex> lock(bus_mutex_);
 	LogBytes("write", buf, len, len);
+	card_op_active_ = true;
 	const int ret = NoteResult(hz2w_card_write(&card_, buf, len));
+	card_op_active_ = false;
 	if (ret)
 		msg_warn("HZ2W %s: WriteCardData failed: %d\n", dev_.device_name, ret);
 	return ret;

@@ -68,7 +68,10 @@ void hz2w_bridge_init(struct hz2w_bridge *bridge, const struct hz2w_ops *ops, vo
 /*
  * cold (1738:5211) へ firmware を送る。送信が成功すると機器は再列挙して warm (04bb:0526) になり、
  * 以降の制御転送は -ENODEV になる。size は HZ2W_FIRMWARE_SIZE でなければならない。
+ * 全ての転送が成功したときは 0、最後の転送の直後に機器が切り離されたとき (-ENODEV、-EIO) は
+ * HZ2W_FW_REENUMERATING を返す。途中の転送の失敗は、その負のエラーをそのまま返す。
  */
+#define HZ2W_FW_REENUMERATING 1
 int hz2w_fw_load(struct hz2w_bridge *bridge, const u8 *fw, size_t size, u16 boot_index);
 
 /*

@@ -11,6 +11,7 @@
  *            driver/common/hz2w/hz2w_core.c driver/common/hz2w/hz2w_card.c -o hz2w_core_test
  */
 #include "hz2w_core.h"
+#include "hz2w_internal.h"
 
 #include <stdarg.h>
 #include <stdio.h>
@@ -78,6 +79,10 @@ struct mock {
 	u8 buf_len;
 	bool sblock_seen;
 	int exec_count;
+	int fw_fail_chunk;	/* この番号 (1 から) の firmware 転送が fw_fail_err で失敗する (0 は無効) */
+	int fw_fail_err;
+	int out_calls;
+	u64 tick_per_call;	/* 制御転送 1 回ごとに進む時刻 (ms) */
 	int atr_garbage_reads;	/* 電源投入の直後、reg3 の読み出しがこの回数まで、古い 4 バイトの内容を返す */
 };
 
@@ -146,8 +151,11 @@ static int mock_control(void *priv, u8 rt, u8 req, u16 value, u16 index, void *b
 	int i;
 
 	m->calls++;
+	m->now += m->tick_per_call;
 	e = add_ev(m, rt, req, value, index, len);
 	if (rt == HZ2W_REQ_OUT) {
+		if (m->fw_fail_chunk && ++m->out_calls == m->fw_fail_chunk)
+			return m->fw_fail_err;
 		if (len > sizeof(e->data))
 			return -EINVAL;
 		memcpy(e->data, buf, len);
@@ -390,6 +398,33 @@ static void test_board_open_close(void)
 	CHECK(m->ev[7].req == 0x21 && m->ev[7].value == 0);
 	CHECK(m->ev[8].req == 0x08 && m->ev[8].value == 0xd400);
 	CHECK(m->ev[9].req == 0x08 && m->ev[9].value == 0x0808);
+	free_mock(m);
+}
+
+/* firmware 送信: 最後の転送の切断だけが再列挙の始まり。途中の失敗は元のエラーで返す */
+static void test_firmware_failures(void)
+{
+	struct hz2w_bridge b;
+	static u8 fw[HZ2W_FIRMWARE_SIZE];
+	struct mock *m = new_mock();
+
+	hz2w_bridge_init(&b, &ops, m);
+	m->fw_fail_chunk = 4;
+	m->fw_fail_err = -ENODEV;
+	CHECK(hz2w_fw_load(&b, fw, HZ2W_FIRMWARE_SIZE, HZ2W_BOOT_INDEX_MAIN) == HZ2W_FW_REENUMERATING);
+	free_mock(m);
+	m = new_mock();
+	hz2w_bridge_init(&b, &ops, m);
+	m->fw_fail_chunk = 2;
+	m->fw_fail_err = -EIO;
+	CHECK(hz2w_fw_load(&b, fw, HZ2W_FIRMWARE_SIZE, HZ2W_BOOT_INDEX_MAIN) == -EIO);
+	CHECK(m->n == 2);	/* 残りは送らない */
+	free_mock(m);
+	m = new_mock();
+	hz2w_bridge_init(&b, &ops, m);
+	m->fw_fail_chunk = 1;
+	m->fw_fail_err = -ENODEV;
+	CHECK(hz2w_fw_load(&b, fw, HZ2W_FIRMWARE_SIZE, HZ2W_BOOT_INDEX_MAIN) == -ENODEV);
 	free_mock(m);
 }
 
@@ -642,9 +677,92 @@ static void test_card_paging(void)
 	free_mock(m);
 }
 
+static void power_on(struct mock *m, struct hz2w_bridge *b, struct hz2w_card *c)
+{
+	power_card(m, b, c);
+	hz2w_card_set_timeout(c, 5000);
+	CHECK(hz2w_card_reset(c) == 0 && c->powered);
+}
+
+/* 期限は操作ごと。期限を渡さない操作は、前の操作の期限を引き継がない */
+static void test_card_deadline(void)
+{
+	struct mock *m = new_mock();
+	struct hz2w_bridge b;
+	struct hz2w_card c;
+	const u8 sblock[5] = { 0x00, 0xc1, 0x01, 0xfe, 0x3e };
+	int before;
+
+	power_on(m, &b, &c);
+	CHECK(c.deadline_ms == 0);	/* 使い切っている */
+	CHECK(hz2w_card_write(&c, sblock, 5) == 0);
+	m->now += 5000;		/* 次の操作までに十分な時間が空く */
+	CHECK(hz2w_card_write(&c, sblock, 5) == 0);
+	CHECK(c.deadline_ms == 0);
+	/* 期限を過ぎてから命令を実行しない (転送のたびに時刻が進む) */
+	m->tick_per_call = 60;
+	before = m->exec_count;
+	hz2w_card_set_timeout(&c, 300);
+	CHECK(hz2w_card_write(&c, sblock, 5) == -ETIMEDOUT);
+	CHECK(m->exec_count == before);
+	CHECK(c.deadline_ms == 0 && c.rx_len == 0);
+	free_mock(m);
+}
+
+/* 電源断が途中で失敗したら powered を残し、再試行で最後まで行う */
+static void test_card_power_retry(void)
+{
+	struct mock *m = new_mock();
+	struct hz2w_bridge b;
+	struct hz2w_card c;
+	int i, base;
+
+	power_on(m, &b, &c);
+	base = m->calls;
+	m->status_bad = base + 1;	/* power_down 最初の nonce の取得 */
+	m->short_after = base + 1;
+	CHECK(hz2w_card_power_down(&c) != 0);
+	CHECK(c.powered);
+	m->short_after = 0;
+	CHECK(hz2w_card_power_down(&c) == 0);
+	CHECK(!c.powered && !m->powered);
+	free_mock(m);
+	/* どの転送が 1 回失敗しても、card の powered が機器の電源より先に false にならない */
+	for (i = 1; i < 80; i++) {
+		m = new_mock();
+		power_card(m, &b, &c);
+		m->calls = 0;
+		m->status_bad = i;
+		hz2w_card_set_timeout(&c, 5000);
+		if (hz2w_card_reset(&c) != 0) {
+			if (!c.powered)
+				CHECK(!m->powered);
+			/* 失敗の後も、続けてやり直せる */
+			m->status_bad = 0;
+			hz2w_card_set_timeout(&c, 5000);
+			CHECK(hz2w_card_reset(&c) == 0 && c.powered && m->powered);
+		}
+		free_mock(m);
+	}
+}
+
+/* リセットのパルスの転送が失敗したら、リセット成功として続けない */
+static void test_ic_reset_failure(void)
+{
+	struct mock *m = new_mock();
+	struct hz2w_bridge b;
+
+	hz2w_bridge_init(&b, &ops, m);
+	m->short_after = 2;	/* パルスの 2 つ目の GPIO から失敗 */
+	CHECK(hz2w_card_ic_reset(&b) != 0);
+	CHECK(count_req(m, 0x23) == 0 && count_req(m, 0x21) == 0);
+	free_mock(m);
+}
+
 int main(void)
 {
 	test_firmware();
+	test_firmware_failures();
 	test_board_open_close();
 	test_board_open_failures();
 	test_keepalive();
@@ -653,6 +771,9 @@ int main(void)
 	test_guard_encoding();
 	test_card_paging();
 	test_atr_stale();
+	test_card_deadline();
+	test_card_power_retry();
+	test_ic_reset_failure();
 	printf("%d checks, %d failures\n", checks, fails);
 	return fails ? 1 : 0;
 }

@@ -364,13 +364,14 @@ int main()
 	 * どちらも WinUSB の INF に同じ DeviceInterfaceGUID と USB ID がある。
 	 */
 	{
-		const std::set<unsigned> hz2w_pids = { 0x5211, 0x0526 };
+		/* VID と PID の組。Windows の cold の VID を warm と取り違えると、ホストが定義を拒否する */
+		const std::set<std::pair<unsigned, unsigned>> hz2w_ids = { { 0x1738, 0x5211 }, { 0x04bb, 0x0526 } };
 		std::ifstream hz2w_inf(root + "/winusb/pkg/inf/I-ODATA-GV-MVP-HZ2W.inf", std::ios::binary);
 		const std::string hz2w_inf_text((std::istreambuf_iterator<char>(hz2w_inf)), std::istreambuf_iterator<char>());
 		for (const auto &[os_name, devices] : {
 			std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
 			std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
-			std::set<unsigned> found;
+			std::set<std::pair<unsigned, unsigned>> found;
 			for (const auto &d : *devices) {
 				if (d.type != "HZ2W")
 					continue;
@@ -386,9 +387,9 @@ int main()
 					std::fprintf(stderr, "I-ODATA-GV-MVP-HZ2W.inf lacks the DeviceInterfaceGUID %s\n", d.interface_guid.c_str());
 					ok = false;
 				}
-				found.insert(d.pid);
+				found.insert({ d.vid, d.pid });
 			}
-			if (found != hz2w_pids) {
+			if (found != hz2w_ids) {
 				std::fprintf(stderr, "%s INI must define HZ2W cold and warm\n", os_name);
 				ok = false;
 			}

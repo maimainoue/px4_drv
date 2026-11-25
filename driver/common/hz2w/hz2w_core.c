@@ -77,9 +77,14 @@ int hz2w_fw_load(struct hz2w_bridge *b, const u8 *fw, size_t size, u16 boot_inde
 	for (i = 0; i < sizeof(chunks) / sizeof(chunks[0]); i++) {
 		int ret;
 
+		const bool last = i == sizeof(chunks) / sizeof(chunks[0]) - 1;
+
 		memcpy(buf, fw + chunks[i].offset, chunks[i].length);
 		ret = b->ops->control(b->priv, HZ2W_REQ_OUT, chunks[i].request, chunks[i].offset,
 				      boot_index, buf, chunks[i].length);
+		/* 最後の転送の直後に機器が切り離される。その失敗だけは再列挙の始まりとして扱う。 */
+		if (last && (ret == -ENODEV || ret == -EIO))
+			return HZ2W_FW_REENUMERATING;
 		if (ret < 0)
 			return ret;
 		if (ret != chunks[i].length)
@@ -88,23 +93,32 @@ int hz2w_fw_load(struct hz2w_bridge *b, const u8 *fw, size_t size, u16 boot_inde
 	return 0;
 }
 
-static void reset_pulse(struct hz2w_bridge *b, u8 mask)
+static int reset_pulse(struct hz2w_bridge *b, u8 mask)
 {
-	/* ベンダーと同じ 0xff → 0x00 → 0xff。待ちは 25、25、50 ms。 */
-	hz2w_gpio(b, false, 0xff, mask, NULL);
+	/* ベンダーと同じ 0xff → 0x00 → 0xff。待ちは 25、25、50 ms。転送が失敗したらそこで止めて返す。 */
+	int ret = hz2w_gpio(b, false, 0xff, mask, NULL);
+
+	if (ret)
+		return ret;
 	b->ops->msleep(b->priv, 25);
-	hz2w_gpio(b, false, 0x00, mask, NULL);
+	ret = hz2w_gpio(b, false, 0x00, mask, NULL);
+	if (ret)
+		return ret;
 	b->ops->msleep(b->priv, 25);
-	hz2w_gpio(b, false, 0xff, mask, NULL);
+	ret = hz2w_gpio(b, false, 0xff, mask, NULL);
+	if (ret)
+		return ret;
 	b->ops->msleep(b->priv, 50);
+	return 0;
 }
 
 int hz2w_card_ic_reset(struct hz2w_bridge *b)
 {
 	u8 aux[1];
-	int ret;
+	int ret = reset_pulse(b, 0x11);
 
-	reset_pulse(b, 0x11);
+	if (ret)
+		return ret;
 	ret = hz2w_ctl_in(b, 0x23, HZ2W_ASIE_ADDR, 0, aux, 1);
 	if (ret)
 		return ret;
@@ -136,8 +150,11 @@ int hz2w_board_open(struct hz2w_bridge *b)
 	ret = hz2w_gpio(b, true, 0x00, 0x02, NULL);
 	if (ret)
 		return ret;
-	reset_pulse(b, 0x11);
-	reset_pulse(b, 0x80);
+	ret = reset_pulse(b, 0x11);
+	if (!ret)
+		ret = reset_pulse(b, 0x80);
+	if (ret)
+		return ret;
 	ret = hz2w_reg_read(b, HZ2W_ASIE_ADDR, 0x09, &version);
 	if (ret) {
 		b->ops->log(b->priv, HZ2W_LOG_ERR, "card interface IC does not respond (%d)", ret);
@@ -151,7 +168,9 @@ int hz2w_board_open(struct hz2w_bridge *b)
 	/* カード側の起動 (ベンダーの記録の順) */
 	hz2w_gpio(b, false, 0x00, 0xd5, NULL);
 	hz2w_gpio(b, false, 0xff, 0xd5, NULL);
-	reset_pulse(b, 0x11);
+	ret = reset_pulse(b, 0x11);
+	if (ret)
+		return ret;
 	ret = hz2w_ctl_in(b, 0x23, HZ2W_ASIE_ADDR, 0, aux, 1);
 	if (ret)
 		return ret;

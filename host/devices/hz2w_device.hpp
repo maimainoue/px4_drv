@@ -45,6 +45,7 @@ public:
 	int ReadCardData(std::uint8_t *buf, std::uint8_t &len) override;
 	int WriteCardData(const std::uint8_t *buf, std::uint8_t len) override;
 	int SetCardIoTimeout(std::uint32_t timeout_ms) override;
+	std::uint8_t MaxCardBlockSize() const noexcept override { return HZ2W_CARD_RX_MAX; }
 
 private:
 	static int ControlCallback(void *context, u8 request_type, u8 request,
@@ -72,6 +73,8 @@ private:
 	std::vector<std::uint8_t> firmware_;
 	bool cold_ = false;
 	bool board_open_ = false;
+	/* ResetCard / WriteCardData の実行中 (bus_mutex_ の中) だけ真。制御転送の待ちを操作の期限で打ち切る。 */
+	bool card_op_active_ = false;
 	std::atomic_bool available_{true};
 	std::atomic_bool card_open_{false};
 	std::atomic_bool initialized_{false};
