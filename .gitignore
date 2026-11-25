@@ -17,6 +17,7 @@ modules.order
 /fwtool/asv5211fw
 
 fwtool/*.bin
+fwtool/*.dll
 *.sys
 *.zip
 

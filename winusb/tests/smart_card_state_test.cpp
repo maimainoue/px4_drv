@@ -289,6 +289,8 @@ public:
 		return crc;
 	}
 
+	std::uint8_t MaxCardBlockSize() const noexcept override { return max_block_size; }
+	std::uint8_t max_block_size = 255;
 	bool is_open = false;
 	bool is_present = false;
 	bool fail_next_apdu = false;
@@ -577,6 +579,26 @@ int main()
 		long_apdu_device->apdu_block_lengths[1] == 3,
 		"ACAS APDU was not split at the UART frame limit.") && succeeded;
 	long_apdu_card.Close();
+
+	/* 下位層の 1 ブロックの上限 (HZ2W は 128 バイト) が小さいときは、IFSD と I ブロックの分割をその長さに収める */
+	auto small_block_device = std::make_shared<MockCardDevice>();
+	small_block_device->atr_bytes = acas_device->atr_bytes;
+	small_block_device->is_present = true;
+	small_block_device->max_block_size = 128;
+	px4::SmartCard small_block_card(small_block_device);
+	response_length = sizeof(response);
+	succeeded = Check(small_block_card.Open() == 0 &&
+		!small_block_device->ifs_values.empty() &&
+		small_block_device->ifs_values[0] == 124 &&
+		small_block_card.Transmit(long_apdu.data(), long_apdu.size(), response,
+			response_length) == 0 &&
+		response_length == 2 &&
+		small_block_device->apdu_block_lengths.size() == 3 &&
+		small_block_device->apdu_block_lengths[0] == 124 &&
+		small_block_device->apdu_block_lengths[1] == 124 &&
+		small_block_device->apdu_block_lengths[2] == 6,
+		"The IFSD and the I-block split ignored the lower layer's block limit.") && succeeded;
+	small_block_card.Close();
 
 	/* IT930x で生成できない TA1 は誤った通信速度へ丸めず明示的に拒否する */
 	auto unsupported_device = std::make_shared<MockCardDevice>();

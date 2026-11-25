@@ -381,12 +381,18 @@ void Hz2wDevice::CloseCard()
 	std::lock_guard<std::mutex> lock(bus_mutex_);
 	if (!card_open_)
 		return;
+	bool power_down_failed = false;
 	if (available_) {
 		const int ret = NoteResult(hz2w_card_power_down(&card_));
-		if (ret)
+		if (ret) {
 			msg_warn("HZ2W %s: CloseCard: power down failed: %d\n", dev_.device_name, ret);
+			/* 機器が消えたのでなければ、次の ResetCard が電源断をやり直せるよう powered を残す */
+			power_down_failed = ret != -ENODEV;
+		}
 	}
 	hz2w_card_discard(&card_);
+	if (power_down_failed)
+		card_.powered = true;
 	card_open_ = false;
 }
 
