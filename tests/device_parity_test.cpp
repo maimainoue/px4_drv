@@ -360,6 +360,52 @@ int main()
 		}
 	}
 	/*
+	 * BUFFALO DT-H11/U2 (0411:01da): 地上波 1 受信機 (カードリーダーは持たない)。WinUSB の INF が同じ
+	 * DeviceInterfaceGUID とハードウェア ID を持つこと。
+	 */
+	{
+		std::ifstream dth11_inf(root + "/winusb/pkg/inf/BUFFALO-DT-H11U2.inf", std::ios::binary);
+		const std::string dth11_inf_text((std::istreambuf_iterator<char>(dth11_inf)), std::istreambuf_iterator<char>());
+		for (const auto &[os_name, devices] : {
+			std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+			std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+			unsigned count = 0;
+			for (const auto &d : *devices) {
+				if (d.type != "DTH11")
+					continue;
+				count++;
+				if (d.systems != std::set<std::string>{"ISDB-T"}) {
+					std::fprintf(stderr, "%s DTH11 must expose one ISDB-T receiver\n", os_name);
+					ok = false;
+				}
+				if (d.vid != 0x0411 || d.pid != 0x01da) {
+					std::fprintf(stderr, "%s DTH11 has %04x:%04x, expected 0411:01da\n", os_name, d.vid, d.pid);
+					ok = false;
+				}
+				if (d.interface_guid.empty()) {
+					std::fprintf(stderr, "%s DTH11 lacks DeviceInterfaceGUID\n", os_name);
+					ok = false;
+				}
+				if (std::string(os_name) == "WinUSB" && dth11_inf_text.find(d.interface_guid) == std::string::npos) {
+					std::fprintf(stderr, "BUFFALO-DT-H11U2.inf lacks the DeviceInterfaceGUID %s\n", d.interface_guid.c_str());
+					ok = false;
+				}
+			}
+			if (count != 1) {
+				std::fprintf(stderr, "%s INI must define DTH11 exactly once\n", os_name);
+				ok = false;
+			}
+		}
+		if (dth11_inf_text.find("USB\\VID_0411&PID_01DA") == std::string::npos) {
+			std::fprintf(stderr, "BUFFALO-DT-H11U2.inf lacks the hardware ID\n");
+			ok = false;
+		}
+		if (px4::ParseDeviceType(L"DTH11") == px4::DeviceType::UNKNOWN) {
+			std::fprintf(stderr, "device factory does not know Type=DTH11\n");
+			ok = false;
+		}
+	}
+	/*
 	 * GV-MVP/HZ2W: 内蔵カードリーダーだけ (受信機の定義なし)。cold (1738:5211) と warm (04bb:0526) を別の定義にし、
 	 * どちらも WinUSB の INF に同じ DeviceInterfaceGUID と USB ID がある。
 	 */
@@ -442,6 +488,8 @@ int main()
 		/* GV-MVP/HZ2W は内蔵カードだけをホスト (WinUSB、macOS) で扱い、カーネルモジュールは未対応。 */
 		{0x1738, 0x5211},
 		{0x04bb, 0x0526},
+		/* DT-H11/U2 は device モードのリンク暗号 (CEPM) をユーザー空間のホストだけで扱い、カーネルモジュールは未対応。 */
+		{0x0411, 0x01da},
 	};
 	const auto linux_ids = LoadLinuxIds(root);
 	if (linux_ids.empty()) {

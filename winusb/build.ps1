@@ -152,6 +152,66 @@ foreach ($build_platform in $build_platforms) {
         throw "HZ2W core test failed. platform: $build_platform"
     }
 
+    # DT-H11/U2 core (mock device).
+    msbuild tests/dth11_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 core test failed. platform: $build_platform"
+    }
+
+    # DT-H11/U2 crypto (mock device).
+    msbuild tests/dth11_crypto_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 crypto test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_crypto_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 crypto test failed. platform: $build_platform"
+    }
+
+    # DT-H11/U2 elliptic curve (mock device).
+    msbuild tests/dth11_ec_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 elliptic curve test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_ec_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 elliptic curve test failed. platform: $build_platform"
+    }
+
+    # DT-H11/U2 application keys (mock device).
+    msbuild tests/dth11_appkeys_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 application keys test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_appkeys_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 application keys test failed. platform: $build_platform"
+    }
+
+    # DT-H11/U2 CEPM (mock device).
+    msbuild tests/dth11_cepm_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 CEPM test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_cepm_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 CEPM test failed. platform: $build_platform"
+    }
+
+    # DT-H11/U2 PSI (mock device).
+    msbuild tests/dth11_psi_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 PSI test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/dth11_psi_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "DT-H11/U2 PSI test failed. platform: $build_platform"
+    }
+
     # TBS 5530 common layer (mock device).
     msbuild tests/tbs5530_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
@@ -222,6 +282,8 @@ New-Item -ItemType Directory dist/BonDriver_XZ_32bit
 New-Item -ItemType Directory dist/BonDriver_XZ_64bit
 New-Item -ItemType Directory dist/BonDriver_DT295_32bit
 New-Item -ItemType Directory dist/BonDriver_DT295_64bit
+New-Item -ItemType Directory dist/BonDriver_DTH11_32bit
+New-Item -ItemType Directory dist/BonDriver_DTH11_64bit
 New-Item -ItemType Directory dist/BonDriver_TBS5530_32bit
 New-Item -ItemType Directory dist/BonDriver_TBS5530_64bit
 
@@ -450,6 +512,18 @@ Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_64b
 Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_DT295_64bit/BonDriver_DT295.dll
 Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_DT295_64bit/DriverHost_PX4.exe
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DT295_64bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11.ini dist/BonDriver_DTH11_32bit/BonDriver_DTH11.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11-T.ChSet.txt dist/BonDriver_DTH11_32bit/BonDriver_DTH11-T.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_DTH11_32bit/BonDriver_DTH11.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_DTH11_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DTH11_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11.ini dist/BonDriver_DTH11_64bit/BonDriver_DTH11.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11-T.ChSet.txt dist/BonDriver_DTH11_64bit/BonDriver_DTH11-T.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_DTH11_64bit/BonDriver_DTH11.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_DTH11_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DTH11_64bit/DriverHost_PX4.ini
 
 # TBS 5530 のファームウェア (dvb-usb-id5530.fw) は配布物に含めない。利用者が DriverHost_PX4.exe と同じフォルダへ置く
 Copy-Item pkg/BonDriver_PX4/BonDriver_TBS5530.ini dist/BonDriver_TBS5530_32bit/BonDriver_TBS5530.ini
