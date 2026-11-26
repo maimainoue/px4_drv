@@ -91,12 +91,23 @@ void ut100b_cipher_init(struct ut100b_cipher *cipher);
 /* 188 バイトのパケット src の DES を外して dst に書く (dst と src は同じでもよい)。放送のスクランブルはそのまま残る。 */
 void ut100b_cipher_decrypt_packet(const struct ut100b_cipher *cipher, u8 *dst, const u8 *src);
 
+/*
+ * aligner が 1 回の入力から出す最大の長さ。持ち越した 2 パケット分 (376 バイト未満) と、1 回の URB の入力を合わせて、
+ * 188 バイトに切り捨てた値が収まる。出力の領域は、この長さ以上にする。
+ */
+#define UT100B_ALIGNED_OUT_SIZE (UT100B_URB_SIZE + UT100B_TS_PACKET_SIZE * 2)
+
 /* USB から届いたバイト列を 188 バイトのパケットに区切り、DES を外す。 */
 struct ut100b_aligner {
 	struct ut100b_cipher cipher;
 	size_t stale;			/* まだ捨てるバイト数 */
 	size_t rest_len;
-	u8 rest[UT100B_TS_PACKET_SIZE];	/* 区切りに満たない残り */
+	/*
+	 * 区切りに満たない残り。同期の確認 (先頭と、188、376 バイト後の 3 か所が 0x47) に必要なバイトが、まだ届いていない
+	 * 候補も、確認できるまでここへ持つため、2 パケット分 (376 バイト) まで持つ。
+	 */
+	u8 rest[UT100B_TS_PACKET_SIZE * 2];
+	bool synced;			/* 区切りを確認済み (次の先頭が 0x47 であれば、そのまま出力する) */
 	u64 resyncs;			/* 区切りを探し直した回数 */
 	u64 skipped;			/* 読み飛ばしたバイト数 */
 };

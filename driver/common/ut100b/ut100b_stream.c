@@ -228,11 +228,37 @@ static u8 at(const struct ut100b_aligner *a, const u8 *in, size_t i)
 	return i < a->rest_len ? a->rest[i] : in[i - a->rest_len];
 }
 
+/*
+ * 区切りの探索。位置 *pos から、先頭が 0x47 で、188 バイト後と 376 バイト後も 0x47 の位置を探す。
+ * 戻り値が真のときは、3 か所とも入力の中にあり、確認できた位置を *pos に返す。
+ * 偽のときは、*pos が、確認に使う位置が入力の外にあって確定できない候補の位置 (その位置から後を、呼び出し側が持ち越す)、
+ * または候補が無いときの入力の末尾。入力の外の位置は、不一致とは扱わない。
+ * 一括で渡した場合と、途中で分けて渡した場合で、同じ位置に同期するようにするため。
+ */
+static bool find_sync(const struct ut100b_aligner *a, const u8 *in, size_t size, size_t *pos)
+{
+	size_t p = *pos;
+
+	for (; p < size; p++) {
+		if (at(a, in, p) != 0x47)
+			continue;
+		if (p + UT100B_TS_PACKET_SIZE < size && at(a, in, p + UT100B_TS_PACKET_SIZE) != 0x47)
+			continue;
+		if (p + UT100B_TS_PACKET_SIZE * 2 < size && at(a, in, p + UT100B_TS_PACKET_SIZE * 2) != 0x47)
+			continue;
+		*pos = p;
+		/* 3 か所とも入力の中にあり、確認できた */
+		return p + UT100B_TS_PACKET_SIZE * 2 < size;
+	}
+	*pos = p;
+	return false;
+}
+
 size_t ut100b_aligner_feed(struct ut100b_aligner *a, const u8 *in, size_t n, u8 *out)
 {
 	size_t size, pos = 0, written = 0, k;
 	u8 packet[UT100B_TS_PACKET_SIZE];
-	u8 rest[UT100B_TS_PACKET_SIZE];
+	u8 rest[UT100B_TS_PACKET_SIZE * 2];
 	size_t rest_len;
 
 	if (a->stale) {
@@ -246,31 +272,25 @@ size_t ut100b_aligner_feed(struct ut100b_aligner *a, const u8 *in, size_t n, u8 
 	}
 	size = a->rest_len + n;
 	for (;;) {
-		if (pos < size && at(a, in, pos) != 0x47) {
-			size_t start = pos;
+		if (!a->synced) {
+			const size_t start = pos;
 
-			while (pos < size) {
-				if (at(a, in, pos) == 0x47) {
-					if (pos + UT100B_TS_PACKET_SIZE < size && at(a, in, pos + UT100B_TS_PACKET_SIZE) != 0x47) {
-						pos++;
-						continue;
-					}
-					if (pos + UT100B_TS_PACKET_SIZE * 2 < size &&
-					    at(a, in, pos + UT100B_TS_PACKET_SIZE * 2) != 0x47) {
-						pos++;
-						continue;
-					}
-					break;
-				}
-				pos++;
-			}
+			a->synced = find_sync(a, in, size, &pos);
 			if (pos != start) {
 				a->resyncs++;
 				a->skipped += pos - start;
 			}
+			/* 確認に必要なバイトが届くまで、候補の位置から後を持ち越す */
+			if (!a->synced)
+				break;
 		}
 		if (size - pos < UT100B_TS_PACKET_SIZE)
 			break;
+		/* 同期の後にも先頭が 0x47 でなければ、区切りを探し直す */
+		if (at(a, in, pos) != 0x47) {
+			a->synced = false;
+			continue;
+		}
 		for (k = 0; k < UT100B_TS_PACKET_SIZE; k++)
 			packet[k] = at(a, in, pos + k);
 		ut100b_cipher_decrypt_packet(&a->cipher, out + written, packet);

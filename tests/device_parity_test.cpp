@@ -125,7 +125,8 @@ std::set<std::pair<unsigned, unsigned>> LoadLinuxIds(const std::string &root)
 		std::regex def_re(R"(#define\s+(USB_(?:PID|VID)_\w+)\s+(0x[0-9a-fA-F]+))");
 		for (std::sregex_iterator it(text.begin(), text.end(), def_re), end; it != end; ++it)
 			defs[(*it)[1]] = std::stoul((*it)[2], nullptr, 16);
-		std::regex id_re(R"(USB_DEVICE\(\s*(\w+)\s*,\s*(\w+)\s*\))");
+		/* USB_DEVICE と、複合デバイスの 1 つの interface だけを受け持つ USB_DEVICE_INTERFACE_NUMBER (3 つ目は interface の番号) */
+		std::regex id_re(R"(USB_DEVICE(?:_INTERFACE_NUMBER)?\(\s*(\w+)\s*,\s*(\w+)\s*(?:,\s*\w+\s*)?\))");
 		auto value = [&](const std::string &v) -> unsigned {
 			return v.rfind("0x", 0) == 0 ? std::stoul(v, nullptr, 16) : defs[v];
 		};
@@ -488,8 +489,6 @@ int main()
 		/* GV-MVP/HZ2W は内蔵カードだけをホスト (WinUSB、macOS) で扱い、カーネルモジュールは未対応。 */
 		{0x1738, 0x5211},
 		{0x04bb, 0x0526},
-		/* QRS-UT100B も、ホスト (WinUSB、macOS、libusb) だけで扱い、カーネルモジュールは未対応。 */
-		{0x3275, 0x7020},
 	};
 	const auto linux_ids = LoadLinuxIds(root);
 	if (linux_ids.empty()) {

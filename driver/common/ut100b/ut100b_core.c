@@ -348,6 +348,13 @@ int ut100b_stream_start(struct hz2w_bridge *b)
 	STEP(ret, filter_write16(b, FILTER_XPID_MIN, 0x1fff));
 	STEP(ret, filter_write16(b, FILTER_XPID_MAX, 0x1fff));
 	STEP(ret, stream_request(b, REQ_STREAM_START, 0));
+	/*
+	 * 150 ms の待ちは、recfriio の選局 (Tune) が、受信を始めた直後に置いている待ちと同じ値。待ちの間も、機器は TS を FIFO へ溜める
+	 * (約 15 Mbps では約 290 KB 分で、FIFO の容量 (約 260 KB とみられる) を超える計算になる)。
+	 * それでも、読み出しの先頭から数えた連続性エラーは、次の試験で 0 件だった: Linux (libusb 版のホスト) の 7 チャンネル × 2 周の録画 (各録画の先頭から)、
+	 * Linux カーネルモジュールの 7 チャンネル × 2 周 (各回の先頭から)。受信中の 10 回の切り替え (libusb 版) は、最後の区間だけ 5 件で、原因は未調査。
+	 * 待ちを短くしたり、読み出しの後へ移したりした場合の動作は確認していないため、recfriio の手順のまま置いている。
+	 */
 	wait_ms(b, 150);
 	return ret;
 }

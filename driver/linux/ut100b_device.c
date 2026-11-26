@@ -378,9 +378,11 @@ static int ut100b_start_stream(struct ut100b_device *device)
 	/* 選局の直後は、ロックから一定の時間が経つまで待つ (ロックしていない搬送波は待たない) */
 	if (device->lock_seen) {
 		const unsigned long until = device->lock_time + msecs_to_jiffies(UT100B_LOCK_SETTLE_MS);
+		/* 判定と待ち時間の計算で、jiffies を 2 回読むと、間に進んだ分だけ引き算が符号なしでラップして、非常に長く眠る */
+		const unsigned long now = jiffies;
 
-		if (time_before(jiffies, until))
-			msleep(jiffies_to_msecs(until - jiffies));
+		if (time_before(now, until))
+			msleep(jiffies_to_msecs(until - now));
 	}
 	ret = ut100b_bus_lock(device);
 	if (ret)
@@ -658,7 +660,7 @@ int ut100b_device_init(struct ut100b_device *device, struct device *dev, struct 
 	mutex_init(&device->operation_lock);
 	mutex_init(&device->bus_lock);
 	device->aligner = kvzalloc(sizeof(*device->aligner), GFP_KERNEL);
-	device->ts_output = kvzalloc(UT100B_URB_SIZE + UT100B_TS_PACKET_SIZE, GFP_KERNEL);
+	device->ts_output = kvzalloc(UT100B_ALIGNED_OUT_SIZE, GFP_KERNEL);
 	if (!device->aligner || !device->ts_output) {
 		ret = -ENOMEM;
 		goto fail_device;

@@ -500,7 +500,7 @@ int Ut100bDevice::StreamHandler(void *context, void *data, u32 size)
 	}
 	if (!device.buffer_ || !device.available_ || !device.aligner_)
 		return -ENODEV;
-	std::array<std::uint8_t, kStreamBufferSize + UT100B_TS_PACKET_SIZE> output{};
+	std::array<std::uint8_t, UT100B_ALIGNED_OUT_SIZE> output{};
 	const std::size_t output_size = ut100b_aligner_feed(device.aligner_.get(),
 		static_cast<const std::uint8_t *>(data), size, output.data());
 	if (!output_size)
@@ -523,6 +523,9 @@ int Ut100bDevice::OpenCard()
 		return -ENODEV;
 	/* CloseCard() の終了処理 (bus_mutex_ の中) が済むまでは開かない */
 	std::lock_guard<std::mutex> lock(bus_mutex_);
+	/* ロックを待つ間に、周期処理が機器の消失 (-ENODEV) を見て available_ を落とすことがある。消えた機器のセッションは開かない。 */
+	if (!available_)
+		return -ENODEV;
 	bool expected = false;
 	return card_open_.compare_exchange_strong(expected, true) ? 0 : -EALREADY;
 }
@@ -738,8 +741,15 @@ int Ut100bDevice::Receiver::SetCapture(bool capture)
 	std::lock_guard<std::recursive_mutex> lock(parent_.mutex_);
 	if (!parent_.available_ || !parent_.receiver_open_)
 		return -ENODEV;
-	if (capture == parent_.buffer_started_)
+	if (capture == parent_.buffer_started_) {
+		/*
+		 * 受信中の選局で USB の受信の再開に失敗すると、buffer_started_ は真のまま、streaming_ は偽になる。
+		 * 停止を挟まない開始の再試行で、USB の受信を再開できるようにする。
+		 */
+		if (capture && !parent_.streaming_)
+			return parent_.StartUsbStream();
 		return 0;
+	}
 	if (capture) {
 		parent_.buffer_->Start();
 		parent_.buffer_started_ = true;

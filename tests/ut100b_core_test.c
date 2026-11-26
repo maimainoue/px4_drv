@@ -250,6 +250,59 @@ static void test_des_vectors(void)
 	CHECK(memcmp(vec0_src, vec0_dst, 4) == 0);
 }
 
+/*
+ * 先頭が 0x47 でも、188 バイト後が 0x47 でない候補は、同期位置として確定しない。
+ * 余分な 0x47 を 1 バイト置いて 3 パケットを続けた入力で、一括で渡した場合と、188 バイトの位置で分けて渡した場合の
+ * どちらも、正しい位置の 3 パケットを出力する。
+ */
+static void test_aligner_false_sync(void)
+{
+	static struct ut100b_aligner a, b;
+	static u8 stream[1 + 188 * 3], expect[188 * 3], out[188 * 4];
+	size_t i, n;
+
+	ut100b_aligner_init(&a);
+	for (i = 0; i < 3; i++) {
+		u8 *p = stream + 1 + 188 * i;
+
+		memset(p, (int)(0x11 * (i + 1)), 188);
+		p[0] = 0x47;
+		p[187] = 0x00;
+		ut100b_cipher_decrypt_packet(&a.cipher, expect + 188 * i, p);
+	}
+	stream[0] = 0x47;
+
+	/* 一括 (a は、期待値を作るときに初期化済み。resyncs などを数え直すため、もう一度初期化する) */
+	ut100b_aligner_init(&a);
+	a.stale = 0;
+	n = ut100b_aligner_feed(&a, stream, sizeof(stream), out);
+	CHECK(n == 188 * 3);
+	CHECK(memcmp(out, expect, sizeof(expect)) == 0);
+	CHECK(a.resyncs == 1 && a.skipped == 1);
+
+	/* 188 バイトの位置で分ける。候補の確認に使う位置が入力の外にあるため、1 回目は確定せず、何も出力しない。 */
+	ut100b_aligner_init(&b);
+	b.stale = 0;
+	n = ut100b_aligner_feed(&b, stream, 189, out);
+	CHECK(n == 0);
+	n = ut100b_aligner_feed(&b, stream + 189, sizeof(stream) - 189, out);
+	CHECK(n == 188 * 3);
+	CHECK(memcmp(out, expect, sizeof(expect)) == 0);
+
+	/* 先頭に余分な 0x00 と 0x47 を置いた入力を 1 バイトずつ渡しても、同じ結果になる */
+	ut100b_aligner_init(&b);
+	b.stale = 0;
+	{
+		static u8 all_out[188 * 4];
+		size_t total = 0;
+
+		for (i = 0; i < sizeof(stream); i++)
+			total += ut100b_aligner_feed(&b, stream + i, 1, all_out + total);
+		CHECK(total == 188 * 2 || total == 188 * 3);
+		CHECK(memcmp(all_out, expect, total) == 0);
+	}
+}
+
 static void test_aligner(void)
 {
 	static struct ut100b_aligner a;
@@ -265,26 +318,31 @@ static void test_aligner(void)
 	CHECK(ut100b_aligner_feed(&a, junk, UT100B_STALE_DISCARD_BYTES - 100, out) == 0);
 	CHECK(a.stale == 0 && a.rest_len == 0);
 
-	/* 先頭に 3 バイトの余りがあるとき、区切りを探し直して、3 つのパケットを復号する。2 回に分けて渡す。 */
+	/*
+	 * 先頭に 3 バイトの余りがあるとき、区切りを探し直して、3 つのパケットを復号する。2 回に分けて渡す。
+	 * 区切りの確認には先頭、188、376 バイト後の 3 か所が要る。1 回目の入力では、3 か所目がまだ届かないため、
+	 * 候補の位置から後を持ち越して、何も出力しない。
+	 */
 	in[0] = 0x00; in[1] = 0x01; in[2] = 0x02;
 	memcpy(in + 3, vec0_src, 188);
 	memcpy(in + 3 + 188, vec1_src, 188);
 	memcpy(in + 3 + 188 * 2, vec2_src, 188);
 	n = ut100b_aligner_feed(&a, in, 3 + 188 + 50, out);
-	CHECK(n == 188);
-	CHECK(memcmp(out, vec0_dst, 188) == 0);
+	CHECK(n == 0);
 	CHECK(a.resyncs == 1 && a.skipped == 3);
-	CHECK(a.rest_len == 50);
+	CHECK(a.rest_len == 188 + 50 && !a.synced);
 	n = ut100b_aligner_feed(&a, in + 3 + 188 + 50, 188 * 2 - 50, out);
-	CHECK(n == 188 * 2);
-	CHECK(memcmp(out, vec1_dst, 188) == 0 && memcmp(out + 188, vec2_dst, 188) == 0);
-	CHECK(a.rest_len == 0 && a.resyncs == 1);
+	CHECK(n == 188 * 3);
+	CHECK(memcmp(out, vec0_dst, 188) == 0 && memcmp(out + 188, vec1_dst, 188) == 0 &&
+	      memcmp(out + 188 * 2, vec2_dst, 188) == 0);
+	CHECK(a.rest_len == 0 && a.resyncs == 1 && a.synced);
 	CHECK(ut100b_aligner_out_capacity(&a, 188 * 3 + 10) == 188 * 3);
 
 	/* 188 バイト未満は、次の入力まで持つ */
 	CHECK(ut100b_aligner_feed(&a, vec0_src, 100, out) == 0 && a.rest_len == 100);
 	CHECK(ut100b_aligner_feed(&a, vec0_src + 100, 88, out) == 188);
 	CHECK(memcmp(out, vec0_dst, 188) == 0);
+	test_aligner_false_sync();
 }
 
 static void test_board_open(void)
