@@ -404,8 +404,13 @@ int hz2w_device_init(struct hz2w_device *device, struct device *dev, struct usb_
 		};
 
 		ret = px4_card_register(dev, &card_backend, &device->card_dev);
-		if (ret)
-			dev_warn(dev, "Card reader registration failed: %d\n", ret);
+	}
+	if (ret) {
+		/* カード専用の機器なので、デバイスファイルが無いまま束縛しない。基板を閉じてから周期処理を止め (止める前に bus_lock を捨てない)、失敗を返す。 */
+		dev_err(dev, "Card reader registration failed: %d\n", ret);
+		hz2w_close_board(device);
+		hz2w_stop_keepalive(device);
+		goto fail;
 	}
 	dev_info(dev, "HZ2W ready (card reader only)\n");
 	return 0;
