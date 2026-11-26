@@ -224,7 +224,9 @@ static int ut100b_card_power_off(void *context)
 	if (device->board_open) {
 		ret = hz2w_card_power_down(&device->card);
 		if (ret) {
-			dev_warn(device->dev, "UT100B card power down failed: %d\n", ret);
+			/* 機器が消えたとき (-ENODEV) は想定内なので、警告しない */
+			if (ret != -ENODEV)
+				dev_warn(device->dev, "UT100B card power down failed: %d\n", ret);
 			/* 機器が消えたのでなければ、次の reset が電源断をやり直せるよう powered を残す */
 			power_down_failed = ret != -ENODEV;
 		}
