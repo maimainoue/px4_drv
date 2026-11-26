@@ -404,6 +404,52 @@ int main()
 			ok = false;
 		}
 	}
+	/*
+	 * QRS-UT100B: 地上波 1 受信機と内蔵カード。warm (3275:7020) だけを定義し、cold (1738:5211) は HZ2W の定義が firmware を送る。
+	 * WinUSB の INF に、同じ DeviceInterfaceGUID と USB ID がある。
+	 */
+	{
+		std::ifstream ut100b_inf(root + "/winusb/pkg/inf/Quixun-QRS-UT100B.inf", std::ios::binary);
+		const std::string ut100b_inf_text((std::istreambuf_iterator<char>(ut100b_inf)), std::istreambuf_iterator<char>());
+		for (const auto &[os_name, devices] : {
+			std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
+			std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
+			int found = 0;
+			for (const auto &d : *devices) {
+				if (d.type != "UT100B")
+					continue;
+				found++;
+				if (d.vid != 0x3275 || d.pid != 0x7020) {
+					std::fprintf(stderr, "%s UT100B must be 3275:7020 (got %04x:%04x)\n", os_name, d.vid, d.pid);
+					ok = false;
+				}
+				if (d.systems != std::set<std::string>{"ISDB-T"}) {
+					std::fprintf(stderr, "%s UT100B must have exactly one ISDB-T receiver\n", os_name);
+					ok = false;
+				}
+				if (d.interface_guid.empty()) {
+					std::fprintf(stderr, "%s UT100B lacks DeviceInterfaceGUID\n", os_name);
+					ok = false;
+				}
+				if (std::string(os_name) == "WinUSB" && ut100b_inf_text.find(d.interface_guid) == std::string::npos) {
+					std::fprintf(stderr, "Quixun-QRS-UT100B.inf lacks the DeviceInterfaceGUID %s\n", d.interface_guid.c_str());
+					ok = false;
+				}
+			}
+			if (found != 1) {
+				std::fprintf(stderr, "%s INI must define exactly one UT100B (got %d)\n", os_name, found);
+				ok = false;
+			}
+		}
+		if (ut100b_inf_text.find("USB\\VID_3275&PID_7020") == std::string::npos) {
+			std::fprintf(stderr, "Quixun-QRS-UT100B.inf lacks a hardware ID\n");
+			ok = false;
+		}
+		if (px4::ParseDeviceType(L"UT100B") == px4::DeviceType::UNKNOWN) {
+			std::fprintf(stderr, "device factory does not know Type=UT100B\n");
+			ok = false;
+		}
+	}
 	for (const auto &[os_name, devices] : {
 		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
 		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
@@ -442,6 +488,8 @@ int main()
 		/* GV-MVP/HZ2W は内蔵カードだけをホスト (WinUSB、macOS) で扱い、カーネルモジュールは未対応。 */
 		{0x1738, 0x5211},
 		{0x04bb, 0x0526},
+		/* QRS-UT100B も、ホスト (WinUSB、macOS、libusb) だけで扱い、カーネルモジュールは未対応。 */
+		{0x3275, 0x7020},
 	};
 	const auto linux_ids = LoadLinuxIds(root);
 	if (linux_ids.empty()) {
