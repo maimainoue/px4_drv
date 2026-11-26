@@ -288,13 +288,27 @@ static int card_reset(struct hz2w_card *card)
 	 * 先頭が欠けたり文字化けしたりする)。リセットのパルスと要求 0x23、0x21 で初期値に戻してから電源を入れる
 	 * (実機で、命令の実行と電源の入れ直しを 4 回繰り返して、毎回 ATR が完全に取れた)。
 	 */
-	ret = hz2w_card_ic_reset(card->bridge);
-	if (ret)
-		return ret;
-	/* reg5 = 0xa0 を先に書かないと、カードの検出 (reg4 の bit0) が立たない。 */
-	ret = wr(card, 0x05, 0xa0);
-	if (ret)
-		return ret;
+	if (!card->keep_ic_state) {
+		ret = hz2w_card_ic_reset(card->bridge);
+		if (ret)
+			return ret;
+		/* reg5 = 0xa0 を先に書かないと、カードの検出 (reg4 の bit0) が立たない。 */
+		ret = wr(card, 0x05, 0xa0);
+		if (ret)
+			return ret;
+	} else {
+		/*
+		 * ASIE5606 を戻せない場合 (QRS-UT100B の受信中) は、前のセッションの途中のやり取りが受け取りの入れ物に
+		 * 残らないよう、準備の命令 (0x80) を出して、少し待ってから止める (recfriio の UT100B の手順)。
+		 */
+		ret = wr(card, CARD_REG_CMD, 0x80);
+		if (ret)
+			return ret;
+		sleep_ms(card, 10);
+		ret = wr(card, CARD_REG_CMD, 0x00);
+		if (ret)
+			return ret;
+	}
 	ret = wr(card, CARD_REG_STATE, 0x00);
 	if (ret)
 		return ret;

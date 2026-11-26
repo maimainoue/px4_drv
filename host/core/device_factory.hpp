@@ -29,6 +29,7 @@ enum class DeviceType : std::uint32_t {
 	TBS5530,
 	DT295,
 	HZ2W,
+	UT100B,
 };
 
 /* INI の Type 文字列から機種系統を引く。未知の値は UNKNOWN。 */

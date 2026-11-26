@@ -152,6 +152,16 @@ foreach ($build_platform in $build_platforms) {
         throw "HZ2W core test failed. platform: $build_platform"
     }
 
+    # QRS-UT100B common layer (mock device).
+    msbuild tests/ut100b_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
+    if ($LASTEXITCODE -ne 0) {
+        throw "UT100B core test build failed. platform: $build_platform"
+    }
+    & "build/$build_platform/Release-static/ut100b_core_test.exe"
+    if ($LASTEXITCODE -ne 0) {
+        throw "UT100B core test failed. platform: $build_platform"
+    }
+
     # TBS 5530 common layer (mock device).
     msbuild tests/tbs5530_core_test.vcxproj /t:"Rebuild" /p:"Configuration=Release-static;Platform=$build_platform;PlatformToolset=$PlatformToolset"
     if ($LASTEXITCODE -ne 0) {
@@ -220,6 +230,8 @@ New-Item -ItemType Directory dist/BonDriver_Torne_32bit
 New-Item -ItemType Directory dist/BonDriver_Torne_64bit
 New-Item -ItemType Directory dist/BonDriver_XZ_32bit
 New-Item -ItemType Directory dist/BonDriver_XZ_64bit
+New-Item -ItemType Directory dist/BonDriver_UT100B_32bit
+New-Item -ItemType Directory dist/BonDriver_UT100B_64bit
 New-Item -ItemType Directory dist/BonDriver_DT295_32bit
 New-Item -ItemType Directory dist/BonDriver_DT295_64bit
 New-Item -ItemType Directory dist/BonDriver_TBS5530_32bit
@@ -438,6 +450,18 @@ Copy-Item pkg/BonDriver_PX4/BonDriver_XZ-T.ChSet.txt dist/BonDriver_XZ_64bit/Bon
 Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_XZ_64bit/BonDriver_XZ.dll
 Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_XZ_64bit/DriverHost_PX4.exe
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_XZ_64bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_UT100B.ini dist/BonDriver_UT100B_32bit/BonDriver_UT100B.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_UT100B-T.ChSet.txt dist/BonDriver_UT100B_32bit/BonDriver_UT100B-T.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_UT100B_32bit/BonDriver_UT100B.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_UT100B_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_UT100B_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_UT100B.ini dist/BonDriver_UT100B_64bit/BonDriver_UT100B.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_UT100B-T.ChSet.txt dist/BonDriver_UT100B_64bit/BonDriver_UT100B-T.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_UT100B_64bit/BonDriver_UT100B.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_UT100B_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_UT100B_64bit/DriverHost_PX4.ini
 
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295.ini dist/BonDriver_DT295_32bit/BonDriver_DT295.ini
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_32bit/BonDriver_DT295-T.ChSet.txt

@@ -1,0 +1,39 @@
+; Quixun QRS-UT100B: warm (3275:7020, ASICEN ASV5211 + ASIE5606)
+; The cold USB ID (1738:5211) is shared with other ASV5211 devices and is bound by I-ODATA-GV-MVP-HZ2W.inf.
+; This binds the composite device itself to WinUSB, so the remote-control interface (MI_01) is not exposed.
+[Version]
+Signature="$Windows NT$"
+Class=Media
+ClassGuid={4d36e96c-e325-11ce-bfc1-08002be10318}
+Provider=%AuthorName%
+DriverVer=11/25/2026,26.11.25.00
+CatalogFile=px4_drv_winusb.cat
+
+[Manufacturer]
+%AuthorName%=UT100B_WinUSB,ntx86,ntamd64,ntarm64
+
+[UT100B_WinUSB.ntx86]
+%UT100B.DeviceDesc%=UT100B.DeviceInstall,USB\VID_3275&PID_7020
+[UT100B_WinUSB.ntamd64]
+%UT100B.DeviceDesc%=UT100B.DeviceInstall,USB\VID_3275&PID_7020
+[UT100B_WinUSB.ntarm64]
+%UT100B.DeviceDesc%=UT100B.DeviceInstall,USB\VID_3275&PID_7020
+
+[UT100B.DeviceInstall]
+Include=winusb.inf
+Needs=WINUSB.NT
+AddProperty=UT100B.DeviceSetup.AddProperty
+[UT100B.DeviceInstall.Services]
+Include=winusb.inf
+Needs=WINUSB.NT.Services
+[UT100B.DeviceInstall.HW]
+AddReg=UT100B.DeviceSetup.AddReg
+[UT100B.DeviceSetup.AddReg]
+HKR,,DeviceInterfaceGUIDs,0x00010000,"{B1DFEDB0-D90F-470A-B5D0-776750BF954F}"
+
+[UT100B.DeviceSetup.AddProperty]
+{afd97640-86a3-4210-b67c-289c41aabe55},3,0x00000011,,0
+
+[Strings]
+AuthorName="px4_drv contributors"
+UT100B.DeviceDesc="Quixun QRS-UT100B ISDB-T Receiver (WinUSB)"

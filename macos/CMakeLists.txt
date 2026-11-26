@@ -87,6 +87,7 @@ include_directories(
     "${DRIVER_DIR}/common/xz"
     "${DRIVER_DIR}/common/dt295"
     "${DRIVER_DIR}/common/hz2w"
+    "${DRIVER_DIR}/common/ut100b"
     "${DRIVER_DIR}/common/tbs5530"
     "${LIBUSB_INCLUDE_DIRS}"
 )
@@ -155,6 +156,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/xz_device.cpp"
     "${HOST_SRC}/devices/dt295_device.cpp"
     "${HOST_SRC}/devices/hz2w_device.cpp"
+    "${HOST_SRC}/devices/ut100b_device.cpp"
     "${HOST_SRC}/devices/tbs5530_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
@@ -190,6 +192,8 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/dt295/dt295_card.c"
     "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
     "${DRIVER_DIR}/common/hz2w/hz2w_card.c"
+    "${DRIVER_DIR}/common/ut100b/ut100b_core.c"
+    "${DRIVER_DIR}/common/ut100b/ut100b_stream.c"
     "${DRIVER_DIR}/common/tbs5530/tbs5530_core.c"
     "${DRIVER_DIR}/common/signal/signal_stat.c"
     "${DRIVER_DIR}/common/demod/cxd2856er.c"
@@ -402,6 +406,16 @@ if(BUILD_TESTING)
         "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
     target_include_directories(hz2w_core_test PRIVATE "${DRIVER_DIR}/common/hz2w")
     add_test(NAME hz2w_core_test COMMAND hz2w_core_test)
+
+    # QRS-UT100B の共通層 (模擬機材) の自動試験。
+    add_executable(ut100b_core_test
+        "${REPO_ROOT}/tests/ut100b_core_test.c"
+        "${DRIVER_DIR}/common/ut100b/ut100b_core.c"
+        "${DRIVER_DIR}/common/ut100b/ut100b_stream.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
+    target_include_directories(ut100b_core_test PRIVATE "${DRIVER_DIR}/common/ut100b" "${DRIVER_DIR}/common/hz2w")
+    add_test(NAME ut100b_core_test COMMAND ut100b_core_test)
 
     # 全機種共通の ATR / T=1 状態機械の模擬 I/O 回帰試験。
     add_executable(smart_card_state_test

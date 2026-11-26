@@ -20,7 +20,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 
 ## 対応状況
 
-次表の `○` はドライバ経路が実装済み、`△` は実装または実機確認に未完了条件がある状態、`—` はその OS の実装がない状態です。INI に製品名があるだけでは受信経路の実装と判定しません。
+次表の `○` はドライバ経路が実装済み、`△` は実装または実機確認に未完了条件がある状態、`—` と `×` は、その OS の実装 (Linux はカーネルドライバ) がない状態です。`×` の機種でも、macOS 版と同じ DriverHost_PX4 を Linux の libusb でビルドすると動くものがあり、その場合は未完了条件の欄に書いています。INI に製品名があるだけでは受信経路の実装と判定しません。
 
 | 機種群 | Linux | Windows (WinUSB) | macOS | 未完了条件 |
 |---|:---:|:---:|:---:|---|
@@ -34,7 +34,8 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | PIXELA PIX-DT295 (`06b8:103b` / `06b8:105c`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (2 台の同時受信とカード)、macOS 11 の Intel Mac (2 台の同時受信と B-CAS の復号) まで。macOS では、スリープからの復帰後に選局に失敗し、`DriverHost_PX4` の再起動が必要になる。BS/CS は対象外。詳細は [DT295 の別紙](docs/devices/dt295.md) |
 | I-O DATA GV-MVP/XZ (`04bb:0530`。実機確認は XZ2 の 1 台) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。実機確認は Linux 6.12、Windows 11 (10 分の受信とカード)、macOS 11 の Intel Mac (11 分の受信と B-CAS の復号、抜去) まで。BS/CS は対象外。XZ と XZ3 の機材は未確認。詳細は [XZ の別紙](docs/devices/xz.md) |
 | TurboSight TBS 5530 (`734c:5530`) | △ | △ | △ | ISDB-T 1基 (実験的)。ISDB-C (CATV。J.83 Annex C、64QAM) も受信でき、Linux と macOS の実機で確認済み。Windows は実装のみで未確認 (Windows と macOS は `ExperimentalISDBC` で有効にする)。BS/CS (ISDB-S) は衛星側の M88RS6060 が DVB-S/S2 専用のため受信できない。ファームウェア `dvb-usb-id5530.fw` は利用者が用意する (毎回の接続で送る)。実機確認は Linux 6.12 (仮想マシンへのパススルーと実機のホスト)、macOS 11 の Intel Mac (DriverHost_PX4 で 60 秒の受信)、Windows 11 (BonDriver 経由の受信、10 分) まで。連続性エラーが出る (仮想マシンのパススルー経由は 10 秒あたり数十回。実機のホストでは、この環境で 5 秒に 1,700 回ほどの飛び) が、原因は未確認。カードリーダーを持たないため B-CAS は対象外。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) |
-| I-O DATA GV-MVP/HZ2W (`04bb:0526`、起動前は `1738:5211`) | × | △ | △ | **内蔵 B-CAS カードのみ** (実験的、地上波の受信は未対応)。B-CAS 初期化命令を、Linux (libusb) 版のホストで 1000 回、Windows 版 (cold からの起動を含む) で 8 回、Windows の WinSCard 経由で 71 回、すべて成功。録画した TS の復号も確認 (先頭 40 MB)。macOS は、ビルドと自動試験だけで、実機は未確認。firmware は利用者が [fwtool](fwtool/) で取り出して置く。詳細は [HZ2W の別紙](docs/devices/hz2w.md) |
+| I-O DATA GV-MVP/HZ2W (`04bb:0526`、起動前は `1738:5211`) | × | △ | △ | **内蔵 B-CAS カードのみ** (実験的、地上波の受信は未対応)。Linux はカーネルドライバがなく、libusb でビルドした DriverHost_PX4 だけが対象。B-CAS 初期化命令を、Linux (libusb) 版のホストで 1000 回、Windows 版 (cold からの起動を含む) で 8 回、Windows の WinSCard 経由で 71 回、すべて成功。録画した TS の復号も確認 (先頭 40 MB)。macOS は、ビルドと自動試験だけで、実機は未確認。firmware は利用者が [fwtool](fwtool/) で取り出して置く。詳細は [HZ2W の別紙](docs/devices/hz2w.md) |
+| Quixun QRS-UT100B (`3275:7020`、起動前は `1738:5211`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。起動前の ID は HZ2W と同じで、firmware はユーザー空間のホスト (DriverHost_PX4) が送る。Linux のカーネルモジュールは、firmware 送信後の機器だけを扱う。実機確認は Linux のカーネルモジュールで 30 分の受信とカード、チャンネル切り替え、取り外し、libusb 版のホストで 30 分の受信とカード、Windows 10 (VM) で受信、WinSCard 経由のカード、チャンネル切り替え 40 回まで。Windows の 30 分では連続性エラーが出る回があり (37 件、21 件、検証 VM の Windows Update を止めた回は 0 件)、原因は VM の負荷が疑わしいが確定していない。macOS はビルドと自動試験だけ。BS/CS は対象外。詳細は [UT100B の別紙](docs/devices/ut100b.md) |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
 PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の受信経路を実機で確認しています。確認範囲と未確認の条件は、[DT295 の別紙](docs/devices/dt295.md) と [XZ の別紙](docs/devices/xz.md) に記載しています。
@@ -253,6 +254,10 @@ python3 tools/tune_latency.py --json DriverHost_PX4.log
 
 	- TBS 5530 (ISDB-T、ISDB-C・実験的。ファームウェア `dvb-usb-id5530.fw` は利用者が用意。Linux、Windows、macOS (Intel Mac) で受信を確認済み。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md))
 
+- Quixun
+
+	- QRS-UT100B (ISDB-T と内蔵カードのみ・実験的。詳細は [UT100B の別紙](docs/devices/ut100b.md))
+
 - e-Better
 
 	- DTV02-1T1S-U (実験的)
@@ -327,6 +332,7 @@ certutil.exe -addstore TrustedPublisher ".\px4_drv_winusb.cer"
 - Sony CECH-ZD1 J: `BonDriver_Torne` (実験的、ISDB-T のみ)
 - PIXELA PIX-DT295 (Rev.01、Rev.02): `BonDriver_DT295` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
 - I-O DATA GV-MVP/XZ: `BonDriver_XZ` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
+- Quixun QRS-UT100B: `BonDriver_UT100B` (実験的、ISDB-T のみ。HZ2W 用の firmware を `DriverHost_PX4.exe` の設定どおりに置く)
 - TurboSight TBS 5530: `BonDriver_TBS5530` (実験的、ISDB-T。ISDB-C は `BonDriver_TBS5530.ini` と `DriverHost_PX4.ini` の設定を変えると受信できる (Windows は実機未確認)。ファームウェア `dvb-usb-id5530.fw` を `DriverHost_PX4.exe` と同じフォルダへ置く)
 
 お使いの PC に合うビット数のフォルダの中のファイルを**すべて**選択し、TVTest や EDCB などのソフトウェアが指定する BonDriver の配置フォルダにコピーします。  

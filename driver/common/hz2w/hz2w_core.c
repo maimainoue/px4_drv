@@ -56,6 +56,11 @@ int hz2w_reg_read(struct hz2w_bridge *b, u8 addr, u8 reg, u8 *value)
 	return 0;
 }
 
+/*
+ * cold への firmware の送信は、ユーザー空間のホストだけが使う。4 KB の転送用の領域をスタックに持つため、カーネルモジュールには含めない
+ * (QRS-UT100B のカーネルモジュールは、firmware を送った後の warm の機器だけを対象にする)。
+ */
+#ifndef __KERNEL__
 int hz2w_fw_load(struct hz2w_bridge *b, const u8 *fw, size_t size, u16 boot_index)
 {
 	/* ローダーと同じ区切り (0x4000 バイトのうち 0x0c00-0x2000 と 0x2400-0x2800 は 0 で、ブート ROM へ送らない) */
@@ -92,6 +97,7 @@ int hz2w_fw_load(struct hz2w_bridge *b, const u8 *fw, size_t size, u16 boot_inde
 	}
 	return 0;
 }
+#endif
 
 static int reset_pulse(struct hz2w_bridge *b, u8 mask)
 {

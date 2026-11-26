@@ -27,6 +27,7 @@
 		<string>0x06b8</string>
 		<string>0x06b8</string>
 		<string>0x04bb</string>
+		<string>0x3275</string>
 	</array>
 	<key>ifdProductID</key>
 	<array>
@@ -35,6 +36,7 @@
 		<string>0x103b</string>
 		<string>0x105c</string>
 		<string>0x0526</string>
+		<string>0x7020</string>
 	</array>
 	<key>ifdFriendlyName</key>
 	<array>
@@ -43,6 +45,7 @@
 		<string>PIXELA PIX-DT295 Rev.01 Smart Card Reader</string>
 		<string>PIXELA PIX-DT295 Rev.02 Smart Card Reader</string>
 		<string>I-O DATA GV-MVP/HZ2W Smart Card Reader</string>
+		<string>Quixun QRS-UT100B Smart Card Reader</string>
 	</array>
 	<key>ifdProtocolSupport</key>
 	<string>0x00000002</string>
