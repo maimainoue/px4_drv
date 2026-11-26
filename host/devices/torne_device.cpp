@@ -235,6 +235,8 @@ ReceiverBase *TorneDevice::GetReceiver(int id) const
 
 int TorneDevice::OpenCard()
 {
+	/* 直前の CloseCard() の電源断が済むまで待つ */
+	std::lock_guard<std::mutex> session_lock(card_session_mutex_);
 	if (!available_ || !bridge_started_)
 		return -ENODEV;
 	bool expected = false;
@@ -243,6 +245,8 @@ int TorneDevice::OpenCard()
 
 void TorneDevice::CloseCard()
 {
+	/* 電源断が済むまで、次の OpenCard() を待たせる */
+	std::lock_guard<std::mutex> session_lock(card_session_mutex_);
 	if (!card_open_.exchange(false) || !available_ || !bridge_started_)
 		return;
 	/* PC/SC が閉じた後はカード UART の VCC を停止する。基板電源は torne と共有しない。 */

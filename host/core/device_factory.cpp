@@ -15,6 +15,7 @@
 #include "tbs5530_device.hpp"
 #include "dt295_device.hpp"
 #include "hz2w_device.hpp"
+#include "ut100b_device.hpp"
 #include "dth11_device.hpp"
 
 namespace px4 {
@@ -38,6 +39,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::TBS5530, L"TBS5530" },
 	{ DeviceType::DT295, L"DT295" },
 	{ DeviceType::HZ2W, L"HZ2W" },
+	{ DeviceType::UT100B, L"UT100B" },
 	{ DeviceType::DTH11, L"DTH11" },
 };
 
@@ -106,6 +108,9 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 	case DeviceType::HZ2W:
 		/* 内蔵カードリーダーだけ (受信機なし)。cold (1738:5211) は firmware を送って再列挙させ、warm (04bb:0526) がカードを開く。 */
 		return Make<Hz2wDevice>(path, definition, index, receiver_manager);
+	case DeviceType::UT100B:
+		/* 地上波 1 受信機と内蔵カード。warm (3275:7020) だけ。cold は HZ2W の定義が firmware を送る。 */
+		return Make<Ut100bDevice>(path, definition, index, receiver_manager);
 	case DeviceType::DTH11:
 		/* 地上波 1 受信機。device モードだけ (この機体は raw モードを受け付けない)。資格情報は利用者の CoBDACom.dll から読む。 */
 		return Make<Dth11Device>(path, definition, index, receiver_manager);

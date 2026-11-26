@@ -171,10 +171,13 @@
     <ClCompile Include="..\..\..\driver\common\dth11\dth11_appkeys.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\dth11\dth11_cepm.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\dth11\dth11_psi.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\ut100b\ut100b_core.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\ut100b\ut100b_stream.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\tbs5530\tbs5530_core.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\dt295_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\hz2w_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\dth11_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\host\devices\ut100b_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\tbs5530_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -342,6 +345,8 @@
     <ClInclude Include="..\..\..\driver\common\dth11\dth11_cepm.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\dth11\dth11_psi.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\host\devices\dth11_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\ut100b\ut100b_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\host\devices\ut100b_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\tbs5530\tbs5530_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\host\devices\tbs5530_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
   </ItemGroup>

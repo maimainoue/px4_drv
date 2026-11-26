@@ -43,6 +43,9 @@
 #define USB_VID_IODATA 0x04bb
 #define USB_PID_IODATA_GV_MVP_XZ 0x0530
 
+/* Quixun QRS-UT100B。USB の VID は Siano と同じ 0x3275 */
+#define USB_PID_QUIXUN_QRS_UT100B 0x7020
+
 #define USB_VID_TBS 0x734c
 #define USB_PID_TBS_5530 0x5530
 
@@ -63,6 +66,7 @@ enum px4_usb_device_type {
 	DT295_USB_DEVICE,
 	XZ_USB_DEVICE,
 	TBS5530_USB_DEVICE,
+	UT100B_USB_DEVICE,
 	//----
 	MAX_USB_DEVICE_TYPE,
 };

@@ -33,7 +33,7 @@
     <PX4RepoRoot>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..').Replace('\','/'))</PX4RepoRoot>
     <OutDir>$(MSBuildThisFileDirectory)..\build\$(PlatformTarget)\$(Configuration)\</OutDir>
     <IntDir>$(MSBuildThisFileDirectory)build\device_parity_test\$(PlatformTarget)\$(Configuration)\</IntDir>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildThisFileDirectory)..\src\common;$(MSBuildThisFileDirectory)..\..\host\common;$(MSBuildThisFileDirectory)..\src\DriverHost_PX4;$(MSBuildThisFileDirectory)..\..\driver\common\include;$(MSBuildThisFileDirectory)..\..\driver\common\bridge;$(MSBuildThisFileDirectory)..\..\driver\common\demod;$(MSBuildThisFileDirectory)..\..\driver\common\tuner;$(MSBuildThisFileDirectory)..\..\driver\common\ts;$(MSBuildThisFileDirectory)..\..\driver\common\signal;$(MSBuildThisFileDirectory)..\..\driver\common\torne;$(MSBuildThisFileDirectory)..\..\driver\common\xz;$(MSBuildThisFileDirectory)..\..\driver\common\dt295;$(MSBuildThisFileDirectory)..\..\driver\common\hz2w;$(MSBuildThisFileDirectory)..\..\driver\common\dth11;$(MSBuildThisFileDirectory)..\..\driver\common\tbs5530;$(MSBuildThisFileDirectory)..\..\host\core;$(MSBuildThisFileDirectory)..\..\host\devices</IncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(MSBuildThisFileDirectory)..\src\common;$(MSBuildThisFileDirectory)..\..\host\common;$(MSBuildThisFileDirectory)..\src\DriverHost_PX4;$(MSBuildThisFileDirectory)..\..\driver\common\include;$(MSBuildThisFileDirectory)..\..\driver\common\bridge;$(MSBuildThisFileDirectory)..\..\driver\common\demod;$(MSBuildThisFileDirectory)..\..\driver\common\tuner;$(MSBuildThisFileDirectory)..\..\driver\common\ts;$(MSBuildThisFileDirectory)..\..\driver\common\signal;$(MSBuildThisFileDirectory)..\..\driver\common\torne;$(MSBuildThisFileDirectory)..\..\driver\common\xz;$(MSBuildThisFileDirectory)..\..\driver\common\dt295;$(MSBuildThisFileDirectory)..\..\driver\common\hz2w;$(MSBuildThisFileDirectory)..\..\driver\common\dth11;$(MSBuildThisFileDirectory)..\..\driver\common\ut100b;$(MSBuildThisFileDirectory)..\..\driver\common\tbs5530;$(MSBuildThisFileDirectory)..\..\host\core;$(MSBuildThisFileDirectory)..\..\host\devices</IncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup>
     <ClCompile>
@@ -82,6 +82,8 @@
     <ClCompile Include="..\..\driver\common\dth11\dth11_appkeys.c" />
     <ClCompile Include="..\..\driver\common\dth11\dth11_cepm.c" />
     <ClCompile Include="..\..\driver\common\dth11\dth11_psi.c" />
+    <ClCompile Include="..\..\driver\common\ut100b\ut100b_core.c" />
+    <ClCompile Include="..\..\driver\common\ut100b\ut100b_stream.c" />
     <ClCompile Include="..\..\driver\common\tbs5530\tbs5530_core.c" />
     <ClCompile Include="..\..\driver\common\demod\si2168.c" />
     <ClCompile Include="..\..\driver\common\tuner\si2141.c" />
@@ -110,6 +112,7 @@
     <ClCompile Include="..\..\host\devices\dt295_device.cpp" />
     <ClCompile Include="..\..\host\devices\hz2w_device.cpp" />
     <ClCompile Include="..\..\host\devices\dth11_device.cpp" />
+    <ClCompile Include="..\..\host\devices\ut100b_device.cpp" />
     <ClCompile Include="..\..\host\devices\tbs5530_device.cpp" />
     <ClCompile Include="..\..\host\devices\siano_protocol.cpp" />
     <ClCompile Include="..\..\host\devices\siano_wire.cpp" />

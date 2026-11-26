@@ -111,6 +111,12 @@ struct hz2w_card {
 	/* 直後のカード I/O の絶対期限 (0 は未設定。既定の待ちを使う) */
 	u64 deadline_ms;
 	u8 guard_seed;
+	/*
+	 * 真なら、ASIE5606 を初期値へ戻す手順 (リセットのパルスと、レジスタ 5 への書き込み) を行わない。
+	 * QRS-UT100B は、同じ IC のレジスタ 5 と 0x10..0x1f が TS の暗号の設定で、受信中にカードを使うため、
+	 * 戻すと TS が壊れる。HZ2W は偽 (従来どおり)。
+	 */
+	bool keep_ic_state;
 };
 
 void hz2w_card_init(struct hz2w_card *card, struct hz2w_bridge *bridge);

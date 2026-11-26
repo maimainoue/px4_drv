@@ -20,6 +20,7 @@
 | [devices/xz.md](devices/xz.md) | I-O DATA GV-MVP/XZ2 の仕組み (起動直後の機材の識別、書き込みが 4 バイトまでのリンク、初期化の表、機材内のポンプ、カード)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験、前面の最小化が成立しなかった経緯 |
 | [devices/tbs5530.md](devices/tbs5530.md) | TurboSight TBS 5530 (ISDB-T) の構成 (FX2 のブリッジ、CXD6822 と内蔵チューナー)、ファームウェアの扱い、実機で分かった落とし穴 (`SET_INTERFACE`、FIFO の不整合)、実機試験 |
 | [devices/hz2w.md](devices/hz2w.md) | I-O DATA GV-MVP/HZ2W (ASICEN ASV5211) の実装資料: firmware の取り出し (`fwtool/asv5211fw`)、実機で分かったこと (起動、基板の情報、I2C の応答)、メーカー製ドライバーの静的解析、未確認の事項、実装の段階 |
+| [devices/ut100b.md](devices/ut100b.md) | Quixun QRS-UT100B (ASICEN ASV5211、HZ2W と同じブリッジ) の調査記録: 2 版の firmware での起動、warm の識別情報と EEPROM、起動時の GPIO、周期処理と機器が消える現象、内蔵 B-CAS カードの読み出し、TS の受信 (Linux の recfriio と Windows の BonDriver_HDP2)、64 ビット Windows でのドライバーの扱い、未確認の事項 |
 
 ## 仕様
 

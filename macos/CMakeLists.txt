@@ -87,6 +87,7 @@ include_directories(
     "${DRIVER_DIR}/common/xz"
     "${DRIVER_DIR}/common/dt295"
     "${DRIVER_DIR}/common/hz2w"
+    "${DRIVER_DIR}/common/ut100b"
     "${DRIVER_DIR}/common/dth11"
     "${DRIVER_DIR}/common/tbs5530"
     "${LIBUSB_INCLUDE_DIRS}"
@@ -156,6 +157,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/xz_device.cpp"
     "${HOST_SRC}/devices/dt295_device.cpp"
     "${HOST_SRC}/devices/hz2w_device.cpp"
+    "${HOST_SRC}/devices/ut100b_device.cpp"
     "${HOST_SRC}/devices/dth11_device.cpp"
     "${HOST_SRC}/devices/tbs5530_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
@@ -192,6 +194,8 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/dt295/dt295_card.c"
     "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
     "${DRIVER_DIR}/common/hz2w/hz2w_card.c"
+    "${DRIVER_DIR}/common/ut100b/ut100b_core.c"
+    "${DRIVER_DIR}/common/ut100b/ut100b_stream.c"
     "${DRIVER_DIR}/common/dth11/dth11_core.c"
     "${DRIVER_DIR}/common/dth11/dth11_crypto.c"
     "${DRIVER_DIR}/common/dth11/dth11_ec.c"
@@ -410,6 +414,16 @@ if(BUILD_TESTING)
         "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
     target_include_directories(hz2w_core_test PRIVATE "${DRIVER_DIR}/common/hz2w")
     add_test(NAME hz2w_core_test COMMAND hz2w_core_test)
+
+    # QRS-UT100B の共通層 (模擬機材) の自動試験。
+    add_executable(ut100b_core_test
+        "${REPO_ROOT}/tests/ut100b_core_test.c"
+        "${DRIVER_DIR}/common/ut100b/ut100b_core.c"
+        "${DRIVER_DIR}/common/ut100b/ut100b_stream.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_core.c"
+        "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
+    target_include_directories(ut100b_core_test PRIVATE "${DRIVER_DIR}/common/ut100b" "${DRIVER_DIR}/common/hz2w")
+    add_test(NAME ut100b_core_test COMMAND ut100b_core_test)
 
     # DT-H11/U2 の共通層 (模擬機材) と暗号部品、楕円曲線、資格情報の読み出し、リンク暗号、番組表の自動試験。
     set(DTH11_DIR "${DRIVER_DIR}/common/dth11")

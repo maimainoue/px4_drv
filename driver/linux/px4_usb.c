@@ -33,6 +33,7 @@
 #include "dt295_device.h"
 #include "xz_device.h"
 #include "tbs5530_device.h"
+#include "ut100b_device.h"
 
 /*
  * fallthrough は Linux 5.4 で追加されたため、それより古いカーネルでは 5.4 と同じ定義を置く
@@ -109,6 +110,11 @@
 #endif
 #define TBS5530_USB_MAX_CHRDEV	(TBS5530_USB_MAX_DEVICE * TBS5530_CHRDEV_NUM)
 
+#ifndef UT100B_USB_MAX_DEVICE
+#define UT100B_USB_MAX_DEVICE	16
+#endif
+#define UT100B_USB_MAX_CHRDEV	(UT100B_USB_MAX_DEVICE * UT100B_CHRDEV_NUM)
+
 
 struct px4_usb_context {
 	enum px4_usb_device_type type;
@@ -126,6 +132,7 @@ struct px4_usb_context {
 		struct dt295_device dt295;
 		struct xz_device xz;
 		struct tbs5530_device tbs5530;
+		struct ut100b_device ut100b;
 	} ctx;
 };
 
@@ -357,6 +364,14 @@ static int px4_usb_probe(struct usb_interface *intf,
 	}
 
 	case USB_VID_SIANO:
+		/* Quixun QRS-UT100B (3275:7020) は、Siano RIO と USB の VID が同じ */
+		if (id->idProduct == USB_PID_QUIXUN_QRS_UT100B) {
+			ctx->type = UT100B_USB_DEVICE;
+			ret = ut100b_device_init(&ctx->ctx.ut100b, dev, intf,
+						 px4_usb_chrdev_ctx[UT100B_USB_DEVICE],
+						 &ctx->quit_completion);
+			break;
+		}
 		if (id->idProduct != USB_PID_SIANO_RIO) {
 			ret = -EINVAL;
 			break;
@@ -521,6 +536,11 @@ static void px4_usb_disconnect(struct usb_interface *intf)
 		wait_for_completion(&ctx->quit_completion);
 		break;
 
+	case UT100B_USB_DEVICE:
+		ut100b_device_term(&ctx->ctx.ut100b);
+		wait_for_completion(&ctx->quit_completion);
+		break;
+
 	default:
 		/* unknown device */
 		break;
@@ -571,6 +591,8 @@ static const struct usb_device_id px4_usb_ids[] = {
 	{ USB_DEVICE(USB_VID_PIXELA, USB_PID_PIX_DT295_REV02) },
 	{ USB_DEVICE(USB_VID_IODATA, USB_PID_IODATA_GV_MVP_XZ) },
 	{ USB_DEVICE(USB_VID_TBS, USB_PID_TBS_5530) },
+	/* 複合デバイスのうち、映像の MI_00 だけを受け持つ (MI_01 はリモコン) */
+	{ USB_DEVICE_INTERFACE_NUMBER(USB_VID_SIANO, USB_PID_QUIXUN_QRS_UT100B, 0) },
 	{ 0 }
 };
 
@@ -696,6 +718,14 @@ int px4_usb_register(void)
 		goto fail_tbs5530;
 	}
 
+	ret = ptx_chrdev_context_create("ut100b", "ut100bvideo",
+					UT100B_USB_MAX_CHRDEV,
+					&px4_usb_chrdev_ctx[UT100B_USB_DEVICE]);
+	if (ret) {
+		pr_err("px4_usb_register: ptx_chrdev_context_create(\"ut100b\") failed.\n");
+		goto fail_ut100b;
+	}
+
 	ret = usb_register(&px4_usb_driver);
 	if (ret) {
 		pr_err("px4_usb_register: usb_register() failed.\n");
@@ -705,6 +735,9 @@ int px4_usb_register(void)
 	return 0;
 
 fail_usb:
+	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[UT100B_USB_DEVICE]);
+
+fail_ut100b:
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[TBS5530_USB_DEVICE]);
 
 fail_tbs5530:
@@ -747,6 +780,7 @@ fail:
 void px4_usb_unregister(void)
 {
 	usb_deregister(&px4_usb_driver);
+	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[UT100B_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[TBS5530_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[XZ_USB_DEVICE]);
 	ptx_chrdev_context_destroy(px4_usb_chrdev_ctx[DT295_USB_DEVICE]);
