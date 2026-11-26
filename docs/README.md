@@ -16,6 +16,7 @@
 | [siano_tuners.md](siano_tuners.md) | PX-S1UD V2.0 / PX-Q1UD (Siano RIO) の OS ごとの経路、ファームウェア、検証状況 |
 | [devices/torne.md](devices/torne.md) | Sony CECH-ZD1 J (torne) の制御、カード UART、OS ごとの利用、実機試験 |
 | [devices/dt295.md](devices/dt295.md) | PIXELA PIX-DT295 の仕組み (起動直後の機材、窓、機材内のポンプ、取り込みブロック)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験 |
+| [devices/dth11.md](devices/dth11.md) | BUFFALO DT-H11/U2 の仕組み (device モードだけで受信する理由、リンク暗号 CEPM、利用者の CoBDACom.dll からの資格情報の読み出し、番組の PID リスト)、設定、実装元と権利、実機試験 |
 | [devices/xz.md](devices/xz.md) | I-O DATA GV-MVP/XZ2 の仕組み (起動直後の機材の識別、書き込みが 4 バイトまでのリンク、初期化の表、機材内のポンプ、カード)、Windows と macOS の提供方法と確認の要点、実装元と権利、実機試験、前面の最小化が成立しなかった経緯 |
 | [devices/tbs5530.md](devices/tbs5530.md) | TurboSight TBS 5530 (ISDB-T) の構成 (FX2 のブリッジ、CXD6822 と内蔵チューナー)、ファームウェアの扱い、実機で分かった落とし穴 (`SET_INTERFACE`、FIFO の不整合)、実機試験 |
 | [devices/hz2w.md](devices/hz2w.md) | I-O DATA GV-MVP/HZ2W (ASICEN ASV5211) の実装資料: firmware の取り出し (`fwtool/asv5211fw`)、実機で分かったこと (起動、基板の情報、I2C の応答)、メーカー製ドライバーの静的解析、未確認の事項、実装の段階 |
