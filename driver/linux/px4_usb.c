@@ -34,6 +34,7 @@
 #include "xz_device.h"
 #include "tbs5530_device.h"
 #include "ut100b_device.h"
+#include "hz2w_device.h"
 
 /*
  * fallthrough は Linux 5.4 で追加されたため、それより古いカーネルでは 5.4 と同じ定義を置く
@@ -133,6 +134,7 @@ struct px4_usb_context {
 		struct xz_device xz;
 		struct tbs5530_device tbs5530;
 		struct ut100b_device ut100b;
+		struct hz2w_device hz2w;
 	} ctx;
 };
 
@@ -421,6 +423,12 @@ static int px4_usb_probe(struct usb_interface *intf,
 		break;
 
 	case USB_VID_IODATA:
+		/* GV-MVP/HZ2W は、内蔵カードだけを扱う (地上波の受信は未対応) */
+		if (id->idProduct == USB_PID_IODATA_GV_MVP_HZ2W) {
+			ctx->type = HZ2W_USB_DEVICE;
+			ret = hz2w_device_init(&ctx->ctx.hz2w, dev, intf, &ctx->quit_completion);
+			break;
+		}
 		if (id->idProduct != USB_PID_IODATA_GV_MVP_XZ) {
 			ret = -EINVAL;
 			break;
@@ -541,6 +549,11 @@ static void px4_usb_disconnect(struct usb_interface *intf)
 		wait_for_completion(&ctx->quit_completion);
 		break;
 
+	case HZ2W_USB_DEVICE:
+		hz2w_device_term(&ctx->ctx.hz2w);
+		wait_for_completion(&ctx->quit_completion);
+		break;
+
 	default:
 		/* unknown device */
 		break;
@@ -590,6 +603,7 @@ static const struct usb_device_id px4_usb_ids[] = {
 	{ USB_DEVICE(USB_VID_PIXELA, USB_PID_PIX_DT295_REV01) },
 	{ USB_DEVICE(USB_VID_PIXELA, USB_PID_PIX_DT295_REV02) },
 	{ USB_DEVICE(USB_VID_IODATA, USB_PID_IODATA_GV_MVP_XZ) },
+	{ USB_DEVICE(USB_VID_IODATA, USB_PID_IODATA_GV_MVP_HZ2W) },
 	{ USB_DEVICE(USB_VID_TBS, USB_PID_TBS_5530) },
 	/* 複合デバイスのうち、映像の MI_00 だけを受け持つ (MI_01 はリモコン) */
 	{ USB_DEVICE_INTERFACE_NUMBER(USB_VID_SIANO, USB_PID_QUIXUN_QRS_UT100B, 0) },
