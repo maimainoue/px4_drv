@@ -614,8 +614,12 @@ int Dth11Device::EnableStreamWithPids()
 		return ret;
 	if (!program_pids_.empty()) {
 		ret = dth11_set_program_pids(&bridge_, program_number_, program_pids_.data(), program_pids_.size());
-		if (ret)
+		if (ret) {
+			/* PID リストのないストリームは、デバイスが何も復号しない。成功として返さず、呼び出し側に後始末をさせる */
 			msg_warn("DTH11: set program PIDs failed: %d\n", ret);
+			dth11_stream_disable(&bridge_);
+			return ret;
+		}
 	}
 	return 0;
 }
@@ -676,7 +680,13 @@ int Dth11Device::LearnProgram(u32 &program, std::vector<u16> &pids)
 					}
 					/* 機器は、ストリームを有効にした時点のセッションで鍵を包み続けるので、入れ直す */
 					dth11_stream_disable(&bridge_);
-					dth11_stream_enable(&bridge_, &info_, DTH11_STREAM_DEVICE);
+					const int re_ret = dth11_stream_enable(&bridge_, &info_, DTH11_STREAM_DEVICE);
+					if (re_ret) {
+						/* 入れ直せていないのに期限を延ばすと、TS が来ないまま待ち続ける */
+						lock.lock();
+						ret = re_ret;
+						break;
+					}
 					deadline = std::chrono::steady_clock::now() + kPsiLearnTimeout;
 				}
 				lock.lock();
@@ -695,11 +705,17 @@ int Dth11Device::LearnProgram(u32 &program, std::vector<u16> &pids)
 	std::array<struct dth11_program, DTH11_PSI_MAX_PROGRAMS> programs{};
 	std::size_t count = 0;
 	bool complete = false;
+	const std::wstring choice = device_def_.configs.Get(L"Dth11Program", L"first");
+	const bool explicit_id = choice != L"all" && choice != L"first";
+	const unsigned long wanted = explicit_id ? std::wcstoul(choice.c_str(), nullptr, 0) : 0;
+	enum dth11_psi_program_state wanted_state = DTH11_PSI_PROGRAM_ABSENT;
 	{
 		std::lock_guard<std::mutex> lock(dec_mutex_);
 		learning_ = false;
 		complete = dth11_psi_complete(psi_.get());
 		count = dth11_psi_programs(psi_.get(), programs.data(), programs.size());
+		if (explicit_id)
+			wanted_state = dth11_psi_program_state(psi_.get(), static_cast<u16>(wanted));
 	}
 	if (ret)
 		return ret;
@@ -712,20 +728,23 @@ int Dth11Device::LearnProgram(u32 &program, std::vector<u16> &pids)
 		return 0;
 	}
 	/* 復号する番組。設定は first (PAT の先頭)、all (最後に送った 1 つだけが有効)、サービス ID */
-	const std::wstring choice = device_def_.configs.Get(L"Dth11Program", L"first");
 	std::size_t selected = 0;
 	if (choice == L"all") {
 		selected = count - 1;
-	} else if (choice != L"first") {
-		const unsigned long id = std::wcstoul(choice.c_str(), nullptr, 0);
+	} else if (explicit_id) {
+		if (wanted_state == DTH11_PSI_PROGRAM_PMT_MISSING) {
+			/* PAT にあるサービスの PMT が間に合わなかった。別の番組で成功にすると、利用者が選んだ番組が映らない */
+			msg_warn("DTH11: PMT of program %lu was not received in time\n", wanted);
+			return -ETIMEDOUT;
+		}
 		bool found = false;
 		for (std::size_t i = 0; i < count; ++i)
-			if (programs[i].number == id) {
+			if (programs[i].number == wanted) {
 				selected = i;
 				found = true;
 			}
 		if (!found)
-			msg_warn("DTH11: program %lu is not in the PAT, using the first one\n", id);
+			msg_warn("DTH11: program %lu is not in the PAT, using the first one\n", wanted);
 	}
 	std::array<u16, DTH11_PROGRAM_MAX_PIDS> list{};
 	const std::size_t n = dth11_program_pid_list(&programs[selected], list.data());
@@ -805,8 +824,15 @@ void Dth11Device::RehandshakeWorker()
 				dth11_dec_install_handshake(&decryptor_, &renewed);
 			}
 			/* 機器は、ストリームを有効にした時点のセッションで鍵を包み続け、無効にすると PID リストを忘れる */
-			if (!dth11_stream_disable(&bridge_) && !EnableStreamWithPids())
+			const int dis_ret = dth11_stream_disable(&bridge_);
+			const int en_ret = dis_ret ? dis_ret : EnableStreamWithPids();
+			if (!en_ret) {
 				msg_log_at(PX4_LOG_INFO, PX4_LOG_CAT_AUTH, "DTH11: stream restarted for the new session\n");
+			} else if (!rehandshake_stop_) {
+				/* 再開できないまま稼働中にすると、TS が来ないのに録画が続く。失敗として通知する */
+				msg_err("DTH11: stream restart after re-handshake failed: %d\n", en_ret);
+				FailStream();
+			}
 		}
 		lock.lock();
 	}
@@ -831,7 +857,11 @@ int Dth11Device::StartStream()
 int Dth11Device::StopStream()
 {
 	int ret = 0;
-	rehandshake_stop_ = true;
+	{
+		/* 待機側の述語の確認と待機の開始の間に、フラグの更新と通知が入って取りこぼされないよう、mutex の下で立てる */
+		std::lock_guard<std::mutex> lock(dec_mutex_);
+		rehandshake_stop_ = true;
+	}
 	dec_cond_.notify_all();
 	if (rehandshake_thread_.joinable())
 		rehandshake_thread_.join();
