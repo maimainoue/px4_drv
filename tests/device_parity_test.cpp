@@ -532,9 +532,11 @@ int main()
 	 * Linux 版の未対応機種。ここに無い差は失敗にする。
 	 */
 	const std::set<std::pair<unsigned, unsigned>> linux_pending = {
-		/* GV-MVP/HZ2W は内蔵カードだけをホスト (WinUSB、macOS) で扱い、カーネルモジュールは未対応。 */
+		/*
+		 * cold (1738:5211) への firmware の送信は、ユーザー空間のホスト (WinUSB、macOS、libusb) だけが行い、
+		 * カーネルモジュールは、firmware を送った後の warm (GV-MVP/HZ2W の 04bb:0526) だけを扱う。
+		 */
 		{0x1738, 0x5211},
-		{0x04bb, 0x0526},
 		/* DT-H11/U2 は device モードのリンク暗号 (CEPM) をユーザー空間のホストだけで扱い、カーネルモジュールは未対応。 */
 		{0x0411, 0x01da},
 	};

@@ -386,6 +386,19 @@ static void test_board_open_close(void)
 		m->card_present = false;
 		m->reg[0x04] = 0;
 		CHECK(hz2w_card_detect(&c, &present) == 0 && !present);
+		/* カードが抜かれたら、受信済みで未読の応答は捨てる。電源の状態 (powered) は、あとの電源断のために残す。 */
+		c.powered = true;
+		c.rx_len = 4;
+		c.rx_pos = 1;
+		CHECK(hz2w_card_detect(&c, &present) == 0 && !present);
+		CHECK(c.rx_len == 0 && c.rx_pos == 0 && c.powered);
+		/* カードが有るときは、未読の応答を残す */
+		m->card_present = true;
+		m->reg[0x04] = 1;
+		c.rx_len = 4;
+		c.rx_pos = 1;
+		CHECK(hz2w_card_detect(&c, &present) == 0 && present);
+		CHECK(c.rx_len == 4 && c.rx_pos == 1);
 	}
 	/* 閉じる手順は、ベンダーの記録の順で最後が GPIO 0xd400、0x0808 */
 	m->n = 0;
