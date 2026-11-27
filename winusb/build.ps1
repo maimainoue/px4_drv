@@ -292,6 +292,8 @@ New-Item -ItemType Directory dist/BonDriver_XZ_32bit
 New-Item -ItemType Directory dist/BonDriver_XZ_64bit
 New-Item -ItemType Directory dist/BonDriver_UT100B_32bit
 New-Item -ItemType Directory dist/BonDriver_UT100B_64bit
+New-Item -ItemType Directory dist/BonDriver_DTH11_32bit
+New-Item -ItemType Directory dist/BonDriver_DTH11_64bit
 New-Item -ItemType Directory dist/BonDriver_DT295_32bit
 New-Item -ItemType Directory dist/BonDriver_DT295_64bit
 New-Item -ItemType Directory dist/BonDriver_TBS5530_32bit
@@ -522,6 +524,18 @@ Copy-Item pkg/BonDriver_PX4/BonDriver_UT100B-T.ChSet.txt dist/BonDriver_UT100B_6
 Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_UT100B_64bit/BonDriver_UT100B.dll
 Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_UT100B_64bit/DriverHost_PX4.exe
 Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_UT100B_64bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11.ini dist/BonDriver_DTH11_32bit/BonDriver_DTH11.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11-T.ChSet.txt dist/BonDriver_DTH11_32bit/BonDriver_DTH11-T.ChSet.txt
+Copy-Item build/x86/Release-static/BonDriver_PX4.dll dist/BonDriver_DTH11_32bit/BonDriver_DTH11.dll
+Copy-Item build/x86/Release-static/DriverHost_PX4.exe dist/BonDriver_DTH11_32bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DTH11_32bit/DriverHost_PX4.ini
+
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11.ini dist/BonDriver_DTH11_64bit/BonDriver_DTH11.ini
+Copy-Item pkg/BonDriver_PX4/BonDriver_DTH11-T.ChSet.txt dist/BonDriver_DTH11_64bit/BonDriver_DTH11-T.ChSet.txt
+Copy-Item build/x64/Release-static/BonDriver_PX4.dll dist/BonDriver_DTH11_64bit/BonDriver_DTH11.dll
+Copy-Item build/x64/Release-static/DriverHost_PX4.exe dist/BonDriver_DTH11_64bit/DriverHost_PX4.exe
+Copy-Item pkg/DriverHost_PX4/DriverHost_PX4.ini dist/BonDriver_DTH11_64bit/DriverHost_PX4.ini
 
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295.ini dist/BonDriver_DT295_32bit/BonDriver_DT295.ini
 Copy-Item pkg/BonDriver_PX4/BonDriver_DT295-T.ChSet.txt dist/BonDriver_DT295_32bit/BonDriver_DT295-T.ChSet.txt
