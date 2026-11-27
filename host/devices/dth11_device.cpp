@@ -723,6 +723,12 @@ int Dth11Device::LearnProgram(u32 &program, std::vector<u16> &pids)
 		   static_cast<long long>(std::chrono::duration_cast<std::chrono::milliseconds>(
 			   std::chrono::steady_clock::now() - learn_start).count()),
 		   complete ? 1 : 0, count);
+	if (explicit_id && wanted_state == DTH11_PSI_PROGRAM_PMT_MISSING) {
+		/* PAT にあるサービスの PMT が間に合わなかった。別の番組 (または PID リストなし) で成功にすると、
+		 * 利用者が選んだ番組が映らない。他の番組の PMT が 1 件も届かず count が 0 のときも、ここで失敗にする */
+		msg_warn("DTH11: PMT of program %lu was not received in time\n", wanted);
+		return -ETIMEDOUT;
+	}
 	if (!count) {
 		msg_warn("DTH11: no PAT/PMT learned, streaming without a PID list\n");
 		return 0;
@@ -732,11 +738,6 @@ int Dth11Device::LearnProgram(u32 &program, std::vector<u16> &pids)
 	if (choice == L"all") {
 		selected = count - 1;
 	} else if (explicit_id) {
-		if (wanted_state == DTH11_PSI_PROGRAM_PMT_MISSING) {
-			/* PAT にあるサービスの PMT が間に合わなかった。別の番組で成功にすると、利用者が選んだ番組が映らない */
-			msg_warn("DTH11: PMT of program %lu was not received in time\n", wanted);
-			return -ETIMEDOUT;
-		}
 		bool found = false;
 		for (std::size_t i = 0; i < count; ++i)
 			if (programs[i].number == wanted) {

@@ -242,6 +242,27 @@ static void test_program_state(void)
 	dth11_psi_feed(&psi, pkt);
 	CHECK(dth11_psi_program_state(&psi, 0x401) == DTH11_PSI_PROGRAM_READY);
 	CHECK(dth11_psi_program_state(&psi, 0x400) == DTH11_PSI_PROGRAM_PMT_MISSING);
+
+	/* 同じ PID の PAT が繰り返し届いても、受け取り済みの PMT は消えない */
+	n = make_pat(sec, nums, ppid, 2);
+	packet(pkt, 0, true, sec, n, 1);
+	dth11_psi_feed(&psi, pkt);
+	CHECK(dth11_psi_program_state(&psi, 0x401) == DTH11_PSI_PROGRAM_READY);
+
+	/* PMT の PID が変わったら、前の PID の PMT は古いので、新しい PMT が届くまで未着にする */
+	{
+		static const u16 moved[2] = { 0x1f2, 0x1f0 };
+
+		n = make_pat(sec, nums, moved, 2);
+		packet(pkt, 0, true, sec, n, 2);
+		dth11_psi_feed(&psi, pkt);
+		CHECK(dth11_psi_program_state(&psi, 0x401) == DTH11_PSI_PROGRAM_PMT_MISSING);
+		CHECK(!dth11_psi_complete(&psi));
+		n = make_pmt(sec, 0x401, 0x1ff, 0, es, 1, 0);
+		packet(pkt, 0x1f2, true, sec, n, 0);
+		dth11_psi_feed(&psi, pkt);
+		CHECK(dth11_psi_program_state(&psi, 0x401) == DTH11_PSI_PROGRAM_READY);
+	}
 }
 
 static void test_bad_input(void)

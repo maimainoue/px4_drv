@@ -105,6 +105,9 @@ static void handle_section(struct dth11_psi *psi, u16 pid, const u8 *sec, size_t
 				continue;
 			for (k = 0; k < psi->pat_count; k++)
 				if (psi->pat_number[k] == prog) {
+					/* PMT の PID が変わったら、前の PID の PMT は古い。新しい PMT が届くまで待つ (同じ PID なら変えない) */
+					if (psi->pat_pmt_pid[k] != ppid)
+						psi->pmt_seen[k] = false;
 					psi->pat_pmt_pid[k] = ppid;
 					found = true;
 				}
