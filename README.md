@@ -36,6 +36,7 @@ PLEX 社の [Webサイト](http://plex-net.co.jp) にて配布されている公
 | TurboSight TBS 5530 (`734c:5530`) | △ | △ | △ | ISDB-T 1基 (実験的)。ISDB-C (CATV。J.83 Annex C、64QAM) も受信でき、Linux と macOS の実機で確認済み。Windows は実装のみで未確認 (Windows と macOS は `ExperimentalISDBC` で有効にする)。BS/CS (ISDB-S) は衛星側の M88RS6060 が DVB-S/S2 専用のため受信できない。ファームウェア `dvb-usb-id5530.fw` は利用者が用意する (毎回の接続で送る)。実機確認は Linux 6.12 (仮想マシンへのパススルーと実機のホスト)、macOS 11 の Intel Mac (DriverHost_PX4 で 60 秒の受信)、Windows 11 (BonDriver 経由の受信、10 分) まで。連続性エラーが出る (仮想マシンのパススルー経由は 10 秒あたり数十回。実機のホストでは、この環境で 5 秒に 1,700 回ほどの飛び) が、原因は未確認。カードリーダーを持たないため B-CAS は対象外。詳細は [TBS 5530 の別紙](docs/devices/tbs5530.md) |
 | I-O DATA GV-MVP/HZ2W (`04bb:0526`、起動前は `1738:5211`) | △ | △ | △ | **内蔵 B-CAS カードのみ** (実験的、地上波の受信は未対応)。Linux はカーネルモジュールと、libusb でビルドした DriverHost_PX4 が対象。カーネルモジュールは firmware 送信後の機器だけを扱い、`/dev/px4card/*` を公開する。カーネルモジュールの実機確認は、usbip 経由で、10 分のカード往復 (1198 回、失敗 0)、取り外し、再接続、`rmmod` まで。B-CAS 初期化命令を、Linux (libusb) 版のホストで 1000 回、Windows 版 (cold からの起動を含む) で 8 回、Windows の WinSCard 経由で 71 回、すべて成功。録画した TS の復号も確認 (先頭 40 MB)。macOS は、ビルドと自動試験だけで、実機は未確認。firmware は利用者が [fwtool](fwtool/) で取り出して置く。詳細は [HZ2W の別紙](docs/devices/hz2w.md) |
 | Quixun QRS-UT100B (`3275:7020`、起動前は `1738:5211`) | △ | △ | △ | ISDB-T 1基と内蔵カード (実験的)。起動前の ID は HZ2W と同じで、firmware はユーザー空間のホスト (DriverHost_PX4) が送る。Linux のカーネルモジュールは、firmware 送信後の機器だけを扱う。実機確認は Linux のカーネルモジュールで 30 分の受信とカード、チャンネル切り替え、取り外し、libusb 版のホストで 30 分の受信とカード、Windows 10 (VM) で受信、WinSCard 経由のカード、チャンネル切り替え 40 回まで。Windows の 30 分では連続性エラーが出る回があり (37 件、21 件、検証 VM の Windows Update を止めた回は 0 件)、原因は VM の負荷が疑わしいが確定していない。macOS はビルドと自動試験だけ。BS/CS は対象外。詳細は [UT100B の別紙](docs/devices/ut100b.md) |
+| BUFFALO DT-H11/U2 (`0411:01da`) | × | △ | △ | ISDB-T 1基 (実験的)。機材内蔵の B-CAS で復号する device モードだけで受信する (この機体のファームウェア 1.0.18 は、復号しない raw モードを受け付けない)。リンク暗号 (CEPM) の相互認証に使う資格情報は、利用者が用意した純正の `CoBDACom.dll` から実行時に読み出し、リポジトリには含まれない。内蔵カードを PC/SC へ見せる経路は未対応。Linux のカーネルモジュールは未対応。libusb のホストは、Linux (WSL2 の USB/IP 経由) で 10 分受信して同期、TEI、連続性のエラーが 0。実機確認は Windows 11 の BonDriver 経由で、27ch を 10 分受信して同期、TEI、連続性のエラーが 0。macOS 11.7 (Intel) でも受信できたが、連続性エラーが 0.05〜7% 出る (原因未調査)。Linux へ機材を直接つないだ実機は未確認。詳細は [DT-H11/U2 の別紙](docs/devices/dth11.md) |
 
 T230C 系、Siano RIO、CECH-ZD1 J は3 OS とも受信経路を持ちますが、上表の OS で実機確認が残っています。
 PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の受信経路を実機で確認しています。確認範囲と未確認の条件は、[DT295 の別紙](docs/devices/dt295.md) と [XZ の別紙](docs/devices/xz.md) に記載しています。
@@ -50,6 +51,7 @@ PIX-DT295 と GV-MVP/XZ は、Linux、Windows、macOS (Intel Mac、macOS 11) の
 - [I-O DATA GV-MVP/XZ](docs/devices/xz.md)
 - [TurboSight TBS 5530](docs/devices/tbs5530.md)
 - [I-O DATA GV-MVP/HZ2W (内蔵カードのみ)](docs/devices/hz2w.md)
+- [BUFFALO DT-H11/U2](docs/devices/dth11.md)
 - [確認用ツール (Linux のカーネルモジュール用。受信の質の集計、内蔵カードリーダーの試験)](docs/tools.md)
 
 設計記録、検証記録、カードリーダーの実装経緯を含む全文書の一覧は [docs/README.md](docs/README.md) にあります。
@@ -333,6 +335,7 @@ certutil.exe -addstore TrustedPublisher ".\px4_drv_winusb.cer"
 - PIXELA PIX-DT295 (Rev.01、Rev.02): `BonDriver_DT295` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
 - I-O DATA GV-MVP/XZ: `BonDriver_XZ` (実験的、ISDB-T のみ。起動直後の機材だけが対象)
 - Quixun QRS-UT100B: `BonDriver_UT100B` (実験的、ISDB-T のみ。HZ2W 用の firmware を `DriverHost_PX4.exe` の設定どおりに置く)
+- BUFFALO DT-H11/U2: `BonDriver_DTH11` (実験的、ISDB-T のみ。device モードだけ。純正の `CoBDACom.dll` を利用者が用意して、`DriverHost_PX4.exe` と同じフォルダへ置く。[別紙](docs/devices/dth11.md)を参照)
 - TurboSight TBS 5530: `BonDriver_TBS5530` (実験的、ISDB-T。ISDB-C は `BonDriver_TBS5530.ini` と `DriverHost_PX4.ini` の設定を変えると受信できる (Windows は実機未確認)。ファームウェア `dvb-usb-id5530.fw` を `DriverHost_PX4.exe` と同じフォルダへ置く)
 
 お使いの PC に合うビット数のフォルダの中のファイルを**すべて**選択し、TVTest や EDCB などのソフトウェアが指定する BonDriver の配置フォルダにコピーします。  

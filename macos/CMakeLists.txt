@@ -88,6 +88,7 @@ include_directories(
     "${DRIVER_DIR}/common/dt295"
     "${DRIVER_DIR}/common/hz2w"
     "${DRIVER_DIR}/common/ut100b"
+    "${DRIVER_DIR}/common/dth11"
     "${DRIVER_DIR}/common/tbs5530"
     "${LIBUSB_INCLUDE_DIRS}"
 )
@@ -157,6 +158,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/dt295_device.cpp"
     "${HOST_SRC}/devices/hz2w_device.cpp"
     "${HOST_SRC}/devices/ut100b_device.cpp"
+    "${HOST_SRC}/devices/dth11_device.cpp"
     "${HOST_SRC}/devices/tbs5530_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
@@ -194,6 +196,12 @@ set(DRIVER_C_SRCS
     "${DRIVER_DIR}/common/hz2w/hz2w_card.c"
     "${DRIVER_DIR}/common/ut100b/ut100b_core.c"
     "${DRIVER_DIR}/common/ut100b/ut100b_stream.c"
+    "${DRIVER_DIR}/common/dth11/dth11_core.c"
+    "${DRIVER_DIR}/common/dth11/dth11_crypto.c"
+    "${DRIVER_DIR}/common/dth11/dth11_ec.c"
+    "${DRIVER_DIR}/common/dth11/dth11_appkeys.c"
+    "${DRIVER_DIR}/common/dth11/dth11_cepm.c"
+    "${DRIVER_DIR}/common/dth11/dth11_psi.c"
     "${DRIVER_DIR}/common/tbs5530/tbs5530_core.c"
     "${DRIVER_DIR}/common/signal/signal_stat.c"
     "${DRIVER_DIR}/common/demod/cxd2856er.c"
@@ -416,6 +424,46 @@ if(BUILD_TESTING)
         "${DRIVER_DIR}/common/hz2w/hz2w_card.c")
     target_include_directories(ut100b_core_test PRIVATE "${DRIVER_DIR}/common/ut100b" "${DRIVER_DIR}/common/hz2w")
     add_test(NAME ut100b_core_test COMMAND ut100b_core_test)
+
+    # DT-H11/U2 の共通層 (模擬機材) と暗号部品、楕円曲線、資格情報の読み出し、リンク暗号、番組表の自動試験。
+    set(DTH11_DIR "${DRIVER_DIR}/common/dth11")
+    add_executable(dth11_core_test
+        "${REPO_ROOT}/tests/dth11_core_test.c"
+        "${DTH11_DIR}/dth11_core.c")
+    target_include_directories(dth11_core_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_core_test COMMAND dth11_core_test)
+    add_executable(dth11_crypto_test
+        "${REPO_ROOT}/tests/dth11_crypto_test.c"
+        "${DTH11_DIR}/dth11_crypto.c")
+    target_include_directories(dth11_crypto_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_crypto_test COMMAND dth11_crypto_test)
+    add_executable(dth11_ec_test
+        "${REPO_ROOT}/tests/dth11_ec_test.c"
+        "${DTH11_DIR}/dth11_ec.c"
+        "${DTH11_DIR}/dth11_crypto.c")
+    target_include_directories(dth11_ec_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_ec_test COMMAND dth11_ec_test)
+    add_executable(dth11_appkeys_test
+        "${REPO_ROOT}/tests/dth11_appkeys_test.c"
+        "${DTH11_DIR}/dth11_appkeys.c"
+        "${DTH11_DIR}/dth11_ec.c"
+        "${DTH11_DIR}/dth11_crypto.c")
+    target_include_directories(dth11_appkeys_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_appkeys_test COMMAND dth11_appkeys_test)
+    add_executable(dth11_cepm_test
+        "${REPO_ROOT}/tests/dth11_cepm_test.c"
+        "${DTH11_DIR}/dth11_cepm.c"
+        "${DTH11_DIR}/dth11_appkeys.c"
+        "${DTH11_DIR}/dth11_ec.c"
+        "${DTH11_DIR}/dth11_crypto.c"
+        "${DTH11_DIR}/dth11_core.c")
+    target_include_directories(dth11_cepm_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_cepm_test COMMAND dth11_cepm_test)
+    add_executable(dth11_psi_test
+        "${REPO_ROOT}/tests/dth11_psi_test.c"
+        "${DTH11_DIR}/dth11_psi.c")
+    target_include_directories(dth11_psi_test PRIVATE "${DTH11_DIR}")
+    add_test(NAME dth11_psi_test COMMAND dth11_psi_test)
 
     # 全機種共通の ATR / T=1 状態機械の模擬 I/O 回帰試験。
     add_executable(smart_card_state_test

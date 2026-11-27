@@ -30,6 +30,7 @@ enum class DeviceType : std::uint32_t {
 	DT295,
 	HZ2W,
 	UT100B,
+	DTH11,
 };
 
 /* INI の Type 文字列から機種系統を引く。未知の値は UNKNOWN。 */
