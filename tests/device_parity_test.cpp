@@ -145,14 +145,18 @@ int main()
 	const auto win = LoadIni(root + "/winusb/pkg/DriverHost_PX4/DriverHost_PX4.ini");
 	bool ok = true;
 
+	/*
+	 * XCODE_CARD はUSBデバイスを持たない内蔵リーダー(Linuxユーザーランド版限定)で、
+	 * WinUSB版・Linuxカーネルモジュールには意図的に存在しない。対称比較から除外する。
+	 */
 	const std::set<Device> mac_set(mac.begin(), mac.end()), win_set(win.begin(), win.end());
 	for (const auto &d : mac_set)
-		if (!win_set.count(d)) {
+		if (d.type != "XCODE_CARD" && !win_set.count(d)) {
 			std::fprintf(stderr, "WinUSB INI lacks %s %s\n", d.type.c_str(), d.interface_guid.c_str());
 			ok = false;
 		}
 	for (const auto &d : win_set)
-		if (!mac_set.count(d)) {
+		if (d.type != "XCODE_CARD" && !mac_set.count(d)) {
 			std::fprintf(stderr, "macOS INI lacks %s %s\n", d.type.c_str(), d.interface_guid.c_str());
 			ok = false;
 		}
@@ -176,6 +180,35 @@ int main()
 			std::fprintf(stderr, "device factory does not know Type=%s\n", d.type.c_str());
 			ok = false;
 		}
+
+	/*
+	 * XCODE_CARD: USB VID/PIDを持たない内蔵カードリーダー。全ゼロのDeviceInterfaceGUID
+	 * (USB探索を迂回する印)で、Receiverを持たないこと(systemsが空集合)を確認する。
+	 */
+	{
+		bool found_xcode_card = false;
+		for (const auto &d : mac) {
+			if (d.type != "XCODE_CARD")
+				continue;
+			found_xcode_card = true;
+			if (!d.systems.empty()) {
+				std::fprintf(stderr, "macOS XCODE_CARD must not expose a receiver\n");
+				ok = false;
+			}
+			if (d.interface_guid != "{00000000-0000-0000-0000-000000000000}") {
+				std::fprintf(stderr, "macOS XCODE_CARD must use the all-zero DeviceInterfaceGUID\n");
+				ok = false;
+			}
+		}
+		if (!found_xcode_card) {
+			std::fprintf(stderr, "macOS INI lacks XCODE_CARD\n");
+			ok = false;
+		}
+		if (px4::ParseDeviceType(L"XCODE_CARD") == px4::DeviceType::UNKNOWN) {
+			std::fprintf(stderr, "device factory does not know Type=XCODE_CARD\n");
+			ok = false;
+		}
+	}
 	for (const auto &[os_name, devices] : {
 		std::pair<const char *, const std::vector<Device> *>{"macOS", &mac},
 		std::pair<const char *, const std::vector<Device> *>{"WinUSB", &win}}) {
@@ -554,6 +587,8 @@ int main()
 		ok = false;
 	}
 	for (const auto &d : mac_set) {
+		if (d.type == "XCODE_CARD")
+			continue;
 		const std::pair<unsigned, unsigned> id(d.vid, d.pid);
 		const bool in_linux = linux_ids.count(id) != 0;
 		if (!in_linux && !linux_pending.count(id)) {

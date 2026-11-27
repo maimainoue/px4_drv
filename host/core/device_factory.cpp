@@ -17,6 +17,9 @@
 #include "hz2w_device.hpp"
 #include "ut100b_device.hpp"
 #include "dth11_device.hpp"
+#if defined(__linux__) && defined(PX4_USERLAND)
+#include "xcode_card_device.hpp"
+#endif
 
 namespace px4 {
 
@@ -41,6 +44,7 @@ constexpr TypeEntry kTypes[] = {
 	{ DeviceType::HZ2W, L"HZ2W" },
 	{ DeviceType::UT100B, L"UT100B" },
 	{ DeviceType::DTH11, L"DTH11" },
+	{ DeviceType::XCODE_CARD, L"XCODE_CARD" },
 };
 
 template <typename T>
@@ -114,6 +118,13 @@ CreatedDevice CreateDevice(DeviceType type, const std::wstring &path,
 	case DeviceType::DTH11:
 		/* 地上波 1 受信機。device モードだけ (この機体は raw モードを受け付けない)。資格情報は利用者の CoBDACom.dll から読む。 */
 		return Make<Dth11Device>(path, definition, index, receiver_manager);
+	case DeviceType::XCODE_CARD:
+#if defined(__linux__) && defined(PX4_USERLAND)
+		/* VIXS XCode6 SoC内蔵のACAS/B-CASリーダー。Linuxユーザーランド版限定、Windows/macOSには存在しない。 */
+		return Make<XcodeCardDevice>(path, definition, index, receiver_manager);
+#else
+		break;
+#endif
 	default:
 		break;
 	}

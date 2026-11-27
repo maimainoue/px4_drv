@@ -160,6 +160,7 @@ set(SHARED_CXX_SRCS
     "${HOST_SRC}/devices/ut100b_device.cpp"
     "${HOST_SRC}/devices/dth11_device.cpp"
     "${HOST_SRC}/devices/tbs5530_device.cpp"
+    "${HOST_SRC}/devices/xcode_card_device.cpp"
     "${HOST_SRC}/devices/isdb2056_device.cpp"
     "${HOST_SRC}/devices/isdbt2071_device.cpp"
     "${HOST_SRC}/core/receiver_base.cpp"

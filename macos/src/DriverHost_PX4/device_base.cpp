@@ -38,6 +38,18 @@ DeviceBase::DeviceBase(const std::wstring &path,
 	usb_dev_.serial = nullptr;
 	memset(&usb_dev_.descriptor, 0, sizeof(usb_dev_.descriptor));
 
+	/*
+	 * DeviceInterfaceGUIDが全ゼロの機種は、USBデバイスではない内蔵デバイス
+	 * (XCODE_CARD等、固定パスでDeviceManagerが直接Add()する機種)を表す。
+	 * libusbは一切使わず、カードリーダー名だけ設定して返る。usb_dev_は
+	 * 上で既にハンドル無しの状態にしてあるため、デストラクタでも安全に扱える。
+	 */
+	static const GUID kNullGuid = {};
+	if (device_def.device_interface_guid == kNullGuid) {
+		card_reader_name_ = device_def_.name + L" Smart Card Reader";
+		return;
+	}
+
 	/* Parse path "BUS:ADDR" where both values are decimal */
 	unsigned long bus_n = 0, addr_n = 0;
 	const wchar_t *p = path.c_str();
