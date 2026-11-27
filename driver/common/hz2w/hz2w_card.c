@@ -214,6 +214,26 @@ static bool atr_complete(const u8 *atr, u8 len)
 	return pos + historical + (need_tck ? 1 : 0) == len;
 }
 
+/*
+ * T=1 のブロック (NAD、PCB、LEN、INF、EDC) が、受信バッファの長さ len で完結していれば真。
+ * B-CAS の ATR (TD1=0x91、TD2=0x81、TC なし) は EDC が LRC (1 バイト) なので、1 ブロックは 4 + LEN。
+ *  - 連鎖していない (PCB が I ブロックで M ビットなし、または R/S ブロック): len が 4 + LEN とちょうど一致する。
+ *  - 連鎖している (I ブロックで M ビット 0x20 あり): 機器は先頭のブロックの後ろへ、続きのデータを
+ *    ヘッダーなしで継ぎ足して 1 つのバッファに入れる (実機の `90 30` の応答は、LEN=30 の先頭ブロック 34 バイトの後ろに
+ *    29 バイトが続き 63 バイト)。続きの形は確かめられないため、先頭のブロックが揃っていること (len >= 4 + LEN) だけを確かめる。
+ */
+static bool t1_block_complete(const u8 *buf, u8 len)
+{
+	unsigned int block_len;
+
+	if (len < 4)
+		return false;
+	block_len = 4u + buf[2];
+	if (!(buf[1] & 0x80) && (buf[1] & 0x20))
+		return len >= block_len;
+	return len == block_len;
+}
+
 /* バッファ (reg 0x40 から) を読み、ビットを反転して受信バッファへ入れる。 */
 static int fetch_buffer(struct hz2w_card *card, u8 length)
 {
@@ -461,13 +481,27 @@ static int card_write(struct hz2w_card *card, const u8 *data, u8 length)
 	if (ret)
 		goto fail;
 	sleep_ms(card, CARD_EXEC_WAIT_MS);
-	/* ブロックの最小長は NAD、PCB、LEN、EDC の 4 バイト */
-	ret = wait_length(card, 4, &response_length);
-	if (!ret)
-		ret = fetch_buffer(card, response_length);
-	if (ret)
-		goto fail;
-	return 0;
+	/*
+	 * ブロックの最小長は NAD、PCB、LEN、EDC の 4 バイト。
+	 * 長さが同じ値で 2 回続いても、受信の途中で一時的に止まっていることがある。
+	 * 読んだブロックの LEN と長さが合うまで (4 + LEN)、読み直して待つ。
+	 */
+	for (;;) {
+		ret = wait_length(card, 4, &response_length);
+		if (!ret)
+			ret = fetch_buffer(card, response_length);
+		if (ret)
+			goto fail;
+		if (t1_block_complete(card->rx, response_length))
+			return 0;
+		card->rx_len = 0;
+		card->rx_pos = 0;
+		if (expired(card)) {
+			ret = -ETIMEDOUT;
+			goto fail;
+		}
+		sleep_ms(card, CARD_POLL_MS);
+	}
 fail:
 	card->rx_len = 0;
 	card->rx_pos = 0;

@@ -83,6 +83,7 @@ struct mock {
 	int fw_fail_err;
 	int out_calls;
 	u64 tick_per_call;	/* 制御転送 1 回ごとに進む時刻 (ms) */
+	int short_reads;	/* reg3 の読み出しがこの回数まで、本当の長さより 1 小さい値を返す (受信の途中で止まる) */
 	int atr_garbage_reads;	/* 電源投入の直後、reg3 の読み出しがこの回数まで、古い 4 バイトの内容を返す */
 };
 
@@ -265,6 +266,12 @@ static int mock_control(void *priv, u8 rt, u8 req, u16 value, u16 index, void *b
 			memcpy(m->buf, m->buf + 64, 13);
 			m->reg[0x03] = 13;
 			v = 13;
+			b[2] = (u8)(v ^ guard_table[c & 15] ^ m->nonce[c >> 4]);
+			b[1] = (u8)(b[2] ^ c);
+		}
+		if (reg == 0x03 && m->short_reads > 0 && v > 4) {
+			m->short_reads--;
+			v--;
 			b[2] = (u8)(v ^ guard_table[c & 15] ^ m->nonce[c >> 4]);
 			b[1] = (u8)(b[2] ^ c);
 		}
@@ -572,6 +579,31 @@ static void test_card_failures(void)
 	CHECK(hz2w_card_write(&c, sblock, 5) == -ETIMEDOUT);
 	CHECK(c.rx_len == 0);
 	m->rx_stuck = false;
+	/*
+	 * 受信の途中 (本当の長さより 1 小さい値) で長さが 2 回続けて同じになっても、LEN と合わないブロックは
+	 * 完了とみなさず、読み直す。
+	 */
+	m->short_reads = 6;
+	hz2w_card_set_timeout(&c, 5000);
+	CHECK(hz2w_card_write(&c, sblock, 5) == 0);
+	CHECK(c.rx_len == 5 && m->short_reads == 0);
+	/* 連鎖したブロック (実機の応答は 2 つのブロックが 1 つのバッファに続く) は、全体が揃えば成功する */
+	{
+		static const u8 chained[10] = { 0x00, 0x20, 0x02, 0x11, 0x22, 0x31, 0x00, 0x00, 0x00, 0x00 };
+
+		memcpy(m->long_resp, chained, sizeof(chained));
+		m->long_resp_len = 10;
+		hz2w_card_set_timeout(&c, 5000);
+		CHECK(hz2w_card_write(&c, sblock, 5) == 0);
+		CHECK(c.rx_len == 10 && memcmp(c.rx, chained, 10) == 0);
+	}
+	/* ブロックをたどって長さがちょうどにならないときは、期限で失敗し、読み残しを返さない */
+	m->long_resp_len = 7;
+	memset(m->long_resp, 0, 8);	/* 4 バイトのブロックの次が 3 バイトで足りない */
+	hz2w_card_set_timeout(&c, 300);
+	CHECK(hz2w_card_write(&c, sblock, 5) == -ETIMEDOUT);
+	CHECK(c.rx_len == 0);
+	m->long_resp_len = 0;
 	/* USB が切れた (転送の失敗) とき、状態を破棄する */
 	hz2w_card_discard(&c);
 	CHECK(!c.powered && !c.nonce_valid && c.rx_len == 0);
@@ -651,6 +683,7 @@ static void test_card_paging(void)
 	m->long_resp_len = 65;
 	for (i = 0; i < 64; i++)
 		m->long_resp[i] = (u8)(i * 7 + 3);
+	m->long_resp[2] = 65 - 4;	/* T=1 ブロックの LEN。長さは 4 + LEN で完結する */
 	{
 		u8 x = 0;
 
@@ -676,6 +709,7 @@ static void test_card_paging(void)
 		int before;
 
 		m->long_resp_len = 128;
+		m->long_resp[2] = 128 - 4;
 		hz2w_card_set_timeout(&c, 5000);
 		CHECK(hz2w_card_write(&c, big, 128) == 0 && c.rx_len == 128);
 		before = m->n;
