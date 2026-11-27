@@ -151,6 +151,14 @@ int hz2w_card_detect(struct hz2w_card *card, bool *present)
 		return ret;
 	/* bit0 がカード有り、bit7 が電源 on */
 	*present = state & 0x01;
+	/*
+	 * 応答を読み終える前にカードが抜かれたとき、抜く前の ATR や応答を、あとの読み出しへ返さない。
+	 * powered は残す: 機器の側は電源 on のままなので、あとの電源断 (hz2w_card_power_down) が、終了の手順を最後まで行えるようにする。
+	 */
+	if (!*present) {
+		card->rx_len = 0;
+		card->rx_pos = 0;
+	}
 	return 0;
 }
 

@@ -58,7 +58,7 @@ int hz2w_reg_read(struct hz2w_bridge *b, u8 addr, u8 reg, u8 *value)
 
 /*
  * cold への firmware の送信は、ユーザー空間のホストだけが使う。4 KB の転送用の領域をスタックに持つため、カーネルモジュールには含めない
- * (QRS-UT100B のカーネルモジュールは、firmware を送った後の warm の機器だけを対象にする)。
+ * (QRS-UT100B と GV-MVP/HZ2W のカーネルモジュールは、firmware を送った後の warm の機器だけを対象にする)。
  */
 #ifndef __KERNEL__
 int hz2w_fw_load(struct hz2w_bridge *b, const u8 *fw, size_t size, u16 boot_index)
