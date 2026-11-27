@@ -30,6 +30,7 @@ enum class DeviceType : std::uint32_t {
 	DT295,
 	HZ2W,
 	UT100B,
+	DTH11,
 	/* USB VID/PIDを持たない内蔵デバイス。Linuxユーザーランド版(PX4_USERLAND)限定。 */
 	XCODE_CARD,
 };

@@ -165,11 +165,18 @@
     <ClCompile Include="..\..\..\driver\common\dt295\dt295_card.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\hz2w\hz2w_core.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\hz2w\hz2w_card.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_core.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_crypto.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_ec.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_appkeys.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_cepm.c"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\driver\common\dth11\dth11_psi.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\ut100b\ut100b_core.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\ut100b\ut100b_stream.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\driver\common\tbs5530\tbs5530_core.c"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\dt295_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\hz2w_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
+    <ClCompile Include="..\..\..\host\devices\dth11_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\ut100b_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
     <ClCompile Include="..\..\..\host\devices\tbs5530_device.cpp"><Filter>ソース ファイル</Filter></ClCompile>
   </ItemGroup>
@@ -330,6 +337,14 @@
     <ClInclude Include="..\..\..\driver\common\hz2w\hz2w_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\hz2w\hz2w_internal.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\host\devices\hz2w_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_tables.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_crypto.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_ec.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_appkeys.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_cepm.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\driver\common\dth11\dth11_psi.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
+    <ClInclude Include="..\..\..\host\devices\dth11_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\ut100b\ut100b_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\host\devices\ut100b_device.hpp"><Filter>ヘッダー ファイル</Filter></ClInclude>
     <ClInclude Include="..\..\..\driver\common\tbs5530\tbs5530_core.h"><Filter>ヘッダー ファイル</Filter></ClInclude>
