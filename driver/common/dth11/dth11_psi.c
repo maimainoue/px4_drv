@@ -233,6 +233,16 @@ bool dth11_psi_complete(const struct dth11_psi *psi)
 	return true;
 }
 
+enum dth11_psi_program_state dth11_psi_program_state(const struct dth11_psi *psi, u16 number)
+{
+	u8 i;
+
+	for (i = 0; i < psi->pat_count; i++)
+		if (psi->pat_number[i] == number)
+			return psi->pmt_seen[i] ? DTH11_PSI_PROGRAM_READY : DTH11_PSI_PROGRAM_PMT_MISSING;
+	return DTH11_PSI_PROGRAM_ABSENT;
+}
+
 size_t dth11_psi_programs(const struct dth11_psi *psi, struct dth11_program *out, size_t max)
 {
 	size_t n = 0, i, j;

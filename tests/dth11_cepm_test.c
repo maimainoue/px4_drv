@@ -76,6 +76,7 @@ struct dev {
 	u16 steps[64];
 	int nreq;
 	int in_attempts;
+	u64 first_in_at, prev_in_at, last_in_at; /* IN を発行した時刻 (最初、最後の 1 つ前、最後) */
 	bool host_cert_ok, host_sig_ok, step6_ok;
 	/* 時計 */
 	u64 now;
@@ -133,6 +134,10 @@ static int dev_control(void *priv, u8 type, u8 req, u16 value, u16 index, void *
 		return len;
 	}
 	/* IN */
+	if (!d->in_attempts)
+		d->first_in_at = d->now;
+	d->prev_in_at = d->last_in_at;
+	d->last_in_at = d->now;
 	d->in_attempts++;
 	if (d->stall_all_in)
 		return -d->stall_errno;
@@ -270,7 +275,11 @@ static void test_handshake_stall_retry(void)
 	dth11_bridge_init(&br, &dev_ops, &d);
 	CHECK(dth11_cepm_handshake(&br, DTH11_CEPM_PATH0, &keys, test_rng, NULL, &hs) == -EPIPE);
 	CHECK(d.now >= 400 + 4000 && d.now <= 400 + 4000 + 50);
-	CHECK(d.in_attempts > 10 && d.in_attempts < 200);
+	/* 模擬の時計は sleep でだけ進む。50 ms 間隔で、期限の時刻 (最初の IN + 4 秒) の IN が最後の 1 回。
+	 * それ以降に IN を発行する実装、期限より前に諦める実装のどちらも通さない */
+	CHECK(d.in_attempts == 4000 / 50 + 1);
+	CHECK(d.last_in_at - d.first_in_at == 4000);
+	CHECK(d.prev_in_at < d.first_in_at + 4000);
 
 	/* 機器が抜かれたことを示すエラーは再試行しない */
 	dev_init(&d);

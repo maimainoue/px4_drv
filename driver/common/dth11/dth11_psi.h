@@ -59,6 +59,13 @@ void dth11_psi_init(struct dth11_psi *psi);
 void dth11_psi_feed(struct dth11_psi *psi, const u8 *pkt);
 /* PAT を受け取っていて、PAT の全ての番組の PMT がそろった */
 bool dth11_psi_complete(const struct dth11_psi *psi);
+/* 番組番号 (サービス ID) の収集の状態: PAT にない / PAT にあるが PMT が未着 / PMT まで受け取り済み */
+enum dth11_psi_program_state {
+	DTH11_PSI_PROGRAM_ABSENT = 0,
+	DTH11_PSI_PROGRAM_PMT_MISSING,
+	DTH11_PSI_PROGRAM_READY,
+};
+enum dth11_psi_program_state dth11_psi_program_state(const struct dth11_psi *psi, u16 number);
 /* 集めた番組を、番組番号の昇順で out へ書く。書いた数を返す */
 size_t dth11_psi_programs(const struct dth11_psi *psi, struct dth11_program *out, size_t max);
 /* 番組の PID リスト: PMT、ECM、PCR (0x1FFF を除く)、ES の順で、重複を除く。書いた数を返す */

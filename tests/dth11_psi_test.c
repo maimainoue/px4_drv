@@ -221,6 +221,29 @@ static void test_incomplete_and_order(void)
 	CHECK(dth11_psi_programs(&psi, progs, 1) == 1);
 }
 
+/* 指定したサービスについて、PAT にない / PMT 未着 / 受け取り済みを区別する (PMT 未着で別の番組を選ばないため) */
+static void test_program_state(void)
+{
+	struct dth11_psi psi;
+	u8 sec[1024], pkt[188];
+	static const u16 nums[2] = { 0x401, 0x400 }, ppid[2] = { 0x1f1, 0x1f0 };
+	static const u16 es[1] = { 0x100 };
+	size_t n;
+
+	dth11_psi_init(&psi);
+	CHECK(dth11_psi_program_state(&psi, 0x400) == DTH11_PSI_PROGRAM_ABSENT);
+	n = make_pat(sec, nums, ppid, 2);
+	packet(pkt, 0, true, sec, n, 0);
+	dth11_psi_feed(&psi, pkt);
+	CHECK(dth11_psi_program_state(&psi, 0x400) == DTH11_PSI_PROGRAM_PMT_MISSING);
+	CHECK(dth11_psi_program_state(&psi, 0x999) == DTH11_PSI_PROGRAM_ABSENT);
+	n = make_pmt(sec, 0x401, 0x1ff, 0, es, 1, 0);
+	packet(pkt, 0x1f1, true, sec, n, 0);
+	dth11_psi_feed(&psi, pkt);
+	CHECK(dth11_psi_program_state(&psi, 0x401) == DTH11_PSI_PROGRAM_READY);
+	CHECK(dth11_psi_program_state(&psi, 0x400) == DTH11_PSI_PROGRAM_PMT_MISSING);
+}
+
 static void test_bad_input(void)
 {
 	struct dth11_psi psi;
@@ -361,6 +384,7 @@ int main(void)
 	test_pat_pmt();
 	test_dedupe_and_no_pcr();
 	test_incomplete_and_order();
+	test_program_state();
 	test_bad_input();
 	test_multi_packet_section();
 	test_pointer_field_continuation();

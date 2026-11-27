@@ -270,6 +270,25 @@ static void test_rejects(void)
 	make_pe(&s, true, true);
 	CHECK(dth11_appkeys_from_image(s.image, 0x50, &keys) == DTH11_APPKEYS_NOT_PE);
 	free_synth(&s);
+
+	/* PE32+ は x86 の格納命令の走査の対象外。黙って空の画像を作らず、PE として受け付けない */
+	make_pe(&s, true, true);
+	put16(s.image + 0x58, 0x20b);
+	CHECK(dth11_appkeys_from_image(s.image, s.len, &keys) == DTH11_APPKEYS_NOT_PE);
+	free_synth(&s);
+
+	/* 重なるセクション: 2 つのセクションがファイル全体を指すと、合計が画像の長さを越える (確保した領域への書き込み超過) */
+	make_pe(&s, true, true);
+	{
+		u8 *t = s.image + 0x58 + 0xe0;
+
+		put32(t + 16, (u32)s.len);
+		put32(t + 20, 0);
+		put32(t + 40 + 16, (u32)s.len);
+		put32(t + 40 + 20, 0);
+	}
+	CHECK(dth11_appkeys_from_image(s.image, s.len, &keys) == DTH11_APPKEYS_NOT_PE);
+	free_synth(&s);
 }
 
 static void test_real_dll(void)

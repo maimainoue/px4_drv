@@ -40,6 +40,7 @@ struct dth11_appkeys {
 	u8 *data;
 	size_t data_len;
 	bool iv_settled;
+	bool iv_scan_done; /* データ領域の全走査を一度行った (失敗した後は繰り返さない) */
 	u8 iv_content[16];
 };
 

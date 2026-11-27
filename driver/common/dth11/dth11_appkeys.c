@@ -89,10 +89,8 @@ static int parse_pe(const u8 *b, size_t len, struct pe_info *pe)
 		if (!rd32(b, len, opt + 28, &v32))
 			return -EINVAL;
 		pe->image_base = v32;
-	} else if (magic == 0x20b) {
-		if (!rd64(b, len, opt + 24, &pe->image_base))
-			return -EINVAL;
 	} else {
+		/* 走査するのは x86 (32 ビット) の即値格納命令だけなので、PE32+ (0x20b) は受け付けない */
 		return -EINVAL;
 	}
 	if (!nsec)
@@ -599,16 +597,20 @@ static bool find_private_key(const u8 q_xy[40], u64 cert_addr, const struct imag
 		size_t pos = 0, s, e, o;
 
 		while (image_next_run(img, &pos, &s, &e)) {
-			u64 start = img->addr[s];
-			u64 dist = start > cert_addr ? start - cert_addr : cert_addr - start;
-
-			if (dist > 0x10000 || e - s < DTH11_PRIV_LEN)
+			if (e - s < DTH11_PRIV_LEN)
 				continue;
-			for (o = 0; o + DTH11_PRIV_LEN <= e - s; o++)
+			/* 連続領域は長くなりうるので、領域の先頭ではなく、窓ごとの位置で距離を判定する */
+			for (o = 0; o + DTH11_PRIV_LEN <= e - s; o++) {
+				u64 a = img->addr[s + o];
+				u64 dist = a > cert_addr ? a - cert_addr : cert_addr - a;
+
+				if (dist > 0x10000)
+					continue;
 				if (dth11_ec_key_matches(img->v + s + o, q_xy)) {
 					memcpy(key, img->v + s + o, DTH11_PRIV_LEN);
 					return true;
 				}
+			}
 		}
 	}
 	return false;
@@ -812,6 +814,11 @@ int dth11_appkeys_from_image(const u8 *image, size_t len, struct dth11_appkeys *
 		if (end < s->raw || end > len)
 			end = len;
 		raw_len = s->raw < end ? end - s->raw : 0;
+		/* セクションが重なる不正な画像でも、確保した len バイトを越えて書かない */
+		if (raw_len > len - code_len - data_len) {
+			ret = DTH11_APPKEYS_NOT_PE;
+			goto out;
+		}
 		if (section_is_code(s)) {
 			memcpy(code + code_len, image + s->raw, raw_len);
 			code_len += raw_len;
@@ -921,6 +928,13 @@ int dth11_appkeys_find_content_iv(struct dth11_appkeys *keys, const u8 k3[16], c
 			memcpy(keys->iv_content, keys->iv_candidates[i], 16);
 			goto found;
 		}
+	/*
+	 * 全走査は CMAC を最大で 2 * data_len 回計算する。受信のスレッドから繰り返し呼ばれても負荷にならないよう、
+	 * 失敗した後は二度と走らせない (同じ DLL とブロックなら結果は同じ)。
+	 */
+	if (keys->iv_scan_done)
+		return -ENOENT;
+	keys->iv_scan_done = true;
 	/* スタックのバッファに無いときの最後の探索先: コード以外のセクションの全ての 16 バイトの窓 (そのままと反転) */
 	for (i = 0; i + 16 <= keys->data_len; i++) {
 		u8 w[16], r[16];
